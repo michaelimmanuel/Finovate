@@ -40,4 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.github/
+# Allow project GitHub metadata (was previously ignored)
+!.github/
