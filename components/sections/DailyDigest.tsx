@@ -24,7 +24,7 @@ export function DailyDigest() {
           ))}
         </div>
         <div className="mt-8">
-          <a href="#subscribe" className="underline">Read today’s digest</a>
+          <a href="/digest" className="underline">Read today’s digest</a>
         </div>
       </div>
     </section>

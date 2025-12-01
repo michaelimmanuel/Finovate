@@ -15,6 +15,7 @@ export function Hero() {
   const [toolsOpen, setToolsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -35,11 +36,12 @@ export function Hero() {
   }, [])
 
   return (
-    <header className="relative min-h-[90svh] bg-white text-black">
-      <div className="mx-auto max-w-7xl px-6 py-6">
+    <header className="relative min-h-[70svh] md:min-h-[90svh] bg-white text-black">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex items-center justify-between text-sm">
           <div className="font-heading text-2xl tracking-tight">Finovate</div>
-          <nav className="hidden md:flex items-center gap-2 rounded-full border border-accent/40 bg-black/90 text-white px-3 py-2 shadow-sm relative">
+          {/* Desktop capsule nav */}
+          <nav className="hidden lg:flex items-center gap-2 rounded-full border border-accent/40 bg-black/90 text-white px-3 py-2 shadow-sm relative">
             <a href="#hero" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Home</a>
             <span className="opacity-50">•</span>
             <div className="relative">
@@ -71,37 +73,67 @@ export function Hero() {
               <Link href="/signup">Login / Register</Link>
             </Button>
           </nav>
+          {/* Mobile nav: hamburger + dropdown */}
+          <div className="lg:hidden">
+            <button
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((v) => !v)}
+              className="inline-flex items-center justify-center rounded-full border border-black/10 bg-black/5 px-3 py-2"
+            >
+              <span className="sr-only">Menu</span>
+              <div className="flex flex-col gap-[3px]">
+                <span className="block h-[2px] w-5 bg-black" />
+                <span className="block h-[2px] w-5 bg-black" />
+                <span className="block h-[2px] w-5 bg-black" />
+              </div>
+            </button>
+            {mobileOpen && (
+              <div className="absolute right-4 left-4 top-16 z-50 rounded-xl border border-black/10 bg-white shadow-lg p-2">
+                <a href="#hero" className="block rounded-md px-3 py-2 hover:bg-black/5">Home</a>
+                <a href="#digest" className="block rounded-md px-3 py-2 hover:bg-black/5">50‑second Daily Digest</a>
+                <a href="#analysis" className="block rounded-md px-3 py-2 hover:bg-black/5">AI Analysis</a>
+                <a href="#articles" className="block rounded-md px-3 py-2 hover:bg-black/5">Articles</a>
+                <div className="mt-2 border-t border-black/10" />
+                <Link href="/signup" className="mt-2 block rounded-md px-3 py-2 bg-accent text-accent-foreground text-center">Login / Register</Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6">
-        <motion.h1
-          className="font-heading text-5xl md:text-7xl tracking-tight absolute left-1/2 top-[28vh] -translate-x-1/2 text-center"
-          {...fadeUp}
-        >
-          Make the markets make sense
-        </motion.h1>
+      {/* Hero content container: centered and responsive without absolute positioning on mobile */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex flex-col items-center text-center pt-10 sm:pt-16 md:pt-24 pb-12">
+          <motion.h1
+            className="font-heading text-4xl sm:text-5xl md:text-7xl tracking-tight"
+            {...fadeUp}
+          >
+            Make the markets make sense
+          </motion.h1>
 
-        <motion.p
-          className="absolute left-1/2 top-[42vh] -translate-x-1/2 text-center text-base md:text-lg max-w-2xl"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.1 } }}
-        >
-          Get a 50‑second daily digest and crisp AI analysis on stocks and crypto.
-        </motion.p>
+          <motion.p
+            className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg max-w-xl sm:max-w-2xl"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.1 } }}
+          >
+            Get a 50‑second daily digest and crisp AI analysis on stocks and crypto.
+          </motion.p>
 
-        <motion.div
-          className="absolute left-1/2 top-[52vh] -translate-x-1/2 flex w-full max-w-md items-center justify-center"
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.18 } }}
-        >
-          <Button asChild variant="accent">
-            <Link href="/signup">Create your account</Link>
-          </Button>
-        </motion.div>
+          <motion.div
+            className="mt-6 sm:mt-8"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.18 } }}
+          >
+            <Button asChild variant="accent">
+              <Link href="/signup">Create your account</Link>
+            </Button>
+          </motion.div>
 
-        <div className="absolute left-1/2 top-[60vh] -translate-x-1/2 text-xs text-neutral-600">
+          <div className="mt-3 text-xs sm:text-[13px] text-neutral-600">
             You can also browse <a href="#articles" className="underline">latest articles</a>.
+          </div>
         </div>
       </div>
     </header>
