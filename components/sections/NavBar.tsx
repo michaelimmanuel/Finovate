@@ -57,7 +57,7 @@ export function NavBar() {
                 ref={menuRef}
                 className="absolute top-full left-0 z-50 mt-2 min-w-[220px] rounded-xl border border-accent/40 bg-black/90 text-white shadow-md p-2 flex flex-col"
               >
-                <a role="menuitem" href="#digest" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">50‑second Daily Digest</a>
+                <a role="menuitem" href="/digest" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">Daily Digest</a>
                 <a role="menuitem" href="#analysis" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">AI Analysis</a>
               </div>
             )}
@@ -88,7 +88,7 @@ export function NavBar() {
           {mobileOpen && (
             <div className="absolute right-4 left-4 top-16 z-50 rounded-xl border border-black/10 bg-white shadow-lg p-2">
               <a href="#hero" className="block rounded-md px-3 py-2 hover:bg-black/5">Home</a>
-              <a href="#digest" className="block rounded-md px-3 py-2 hover:bg-black/5">50‑second Daily Digest</a>
+              <a href="/digest" className="block rounded-md px-3 py-2 hover:bg-black/5">Daily Digest</a>
               <a href="#analysis" className="block rounded-md px-3 py-2 hover:bg-black/5">AI Analysis</a>
               <a href="/news" className="block rounded-md px-3 py-2 hover:bg-black/5">News</a>
               <div className="mt-2 border-t border-black/10" />
