@@ -129,7 +129,7 @@ export default function NewsIndex() {
               <div className="border-l-4 border-accent mr-4 h-7" />
               <h3 className="font-heading text-2xl">Latest</h3>
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-y-6 gap-x-10 md:grid-cols-2">
               {latest.map((it) => (
                 <NewsCard key={it.href} {...it} />
               ))}
@@ -140,7 +140,7 @@ export default function NewsIndex() {
               <div className="border-l-4 border-accent mr-4 h-7" />
               <h3 className="font-heading text-2xl">In Focus</h3>
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-y-6 gap-x-10 md:grid-cols-2">
               {latest.concat(mostRead).slice(0, 4).map((it) => (
                 <NewsCard key={it.href + "-focus"} {...it} compact />
               ))}
