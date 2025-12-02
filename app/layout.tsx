@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Bebas_Neue, Nunito, Geist_Mono } from "next/font/google"
 import "./globals.css"
+import { NavBar } from "@/components/sections/NavBar"
 
 // Heading font
 const bebas = Bebas_Neue({
@@ -34,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${nunito.variable} ${bebas.variable} ${geistMono.variable} antialiased`}>
+        <NavBar />
         {children}
       </body>
     </html>
