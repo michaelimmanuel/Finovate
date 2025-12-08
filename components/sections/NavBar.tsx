@@ -62,7 +62,7 @@ export function NavBar() {
                   <a role="menuitem" href="/digest" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">Daily Digest</a>
                   <a role="menuitem" href="/tools/budget-tracker" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">Budget Tracker</a>
                   <a role="menuitem" href="/tools/savings-tracker" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">Savings Tracker</a>
-                <a role="menuitem" href="#analysis" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">AI Analysis</a>
+                <a role="menuitem" href="/news-aggregator" className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors">News Aggregator</a>
               </div>
             )}
           </div>
