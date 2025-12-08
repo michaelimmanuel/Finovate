@@ -1,7 +1,10 @@
 import Link from "next/link"
 
-export default function NewsDetail({ params }: { params: { slug: string } }) {
-  const title = params.slug.replace(/[-_]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase())
+export default function NewsDetail({ params }: { params: { slug?: string } }) {
+  const title =
+    typeof params.slug === "string"
+      ? params.slug.replace(/[-_]/g, " ").replace(/\b\w/g, (m) => m.toUpperCase())
+      : "";
   const date = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
 
   return (

@@ -1,7 +1,20 @@
+"use client"
 import { NewsCard } from "@/components/news/NewsCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { NewsModal } from "./NewsModal"
+import { useState } from "react"
 
 export default function NewsIndex() {
+  const [modalNews, setModalNews] = useState<null | {
+    title: string;
+    summary: string;
+    date: string;
+    tag?: string;
+    href: string;
+    imageSrc?: string;
+    imageAlt?: string;
+    sponsoredBrand?: string;
+  }>(null);
   const latest = [
     {
       title: "Markets open mixed as yields steady",
@@ -131,7 +144,9 @@ export default function NewsIndex() {
             </div>
             <div className="grid gap-y-6 gap-x-10 md:grid-cols-2">
               {latest.map((it) => (
-                <NewsCard key={it.href} {...it} />
+                <div key={it.href} onClick={() => setModalNews(it)} className="cursor-pointer">
+                  <NewsCard {...it} />
+                </div>
               ))}
             </div>
           </div>
@@ -142,7 +157,9 @@ export default function NewsIndex() {
             </div>
             <div className="grid gap-y-6 gap-x-10 md:grid-cols-2">
               {latest.concat(mostRead).slice(0, 4).map((it) => (
-                <NewsCard key={it.href + "-focus"} {...it} compact />
+                <div key={it.href + "-focus"} onClick={() => setModalNews(it)} className="cursor-pointer">
+                  <NewsCard {...it} compact />
+                </div>
               ))}
             </div>
           </div>
@@ -173,13 +190,17 @@ export default function NewsIndex() {
             </CardHeader>
             <CardContent className="space-y-4">
               {mostRead.map((it) => (
-                <NewsCard key={it.href} {...it} compact />
+                <div key={it.href} onClick={() => setModalNews(it)} className="cursor-pointer">
+                  <NewsCard {...it} compact />
+                </div>
               ))}
             </CardContent>
           </Card>
         </aside>
       </section>
       <div className="mt-12 text-center text-sm opacity-70">More pagination & filters coming soon</div>
+      {/* News Modal */}
+      <NewsModal modalNews={modalNews} onClose={() => setModalNews(null)} />
     </main>
   )
 }
