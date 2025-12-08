@@ -140,3 +140,17 @@ body::-webkit-scrollbar {
 
 /* Optional: apply heading font to semantic heading tags */
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading), sans-serif; }
+
+@keyframes slowFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-25px); }
+}
+
+.animate-slowFloat {
+  animation: slowFloat 8s ease-in-out infinite;
+}
+
+.animate-slowFloat-delay {
+  animation: slowFloat 10s ease-in-out infinite;
+  animation-delay: 2s;
+}

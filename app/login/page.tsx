@@ -4,14 +4,15 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function SignUp() {
+export default function Login() {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    name: "",
     email: "",
     password: "",
   });
+
+  const [remember, setRemember] = useState(false);
 
   return (
     <div className="flex h-screen relative overflow-hidden">
@@ -19,23 +20,12 @@ export default function SignUp() {
       {/* LEFT - FORM */}
       <div className="w-1/2 bg-white flex flex-col justify-center px-20 text-center">
         
-        <h2 className="text-4xl font-bold mb-3">Create Account</h2>
-        <p className="text-gray-500 mb-10">Join us and start your journey 🚀</p>
+        <h2 className="text-4xl font-bold mb-3">Welcome Back</h2>
+        <p className="text-gray-500 mb-10">Log in to continue 🚀</p>
 
-        {/* FORM INPUTS */}
+        {/* INPUTS */}
         <div className="space-y-5 text-left">
           
-          <div>
-            <label className="text-sm font-medium text-gray-700">Full Name</label>
-            <input
-              type="text"
-              className="border rounded-lg w-full px-4 py-2 mt-1 focus:ring focus:ring-blue-200"
-              placeholder="John Doe"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </div>
-
           <div>
             <label className="text-sm font-medium text-gray-700">Email</label>
             <input
@@ -56,83 +46,98 @@ export default function SignUp() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
+
+            {/* Remember & Forgot */}
+            <div className="flex justify-between items-center mt-2">
+              <label className="flex items-center gap-2 text-gray-500 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={() => setRemember(!remember)}
+                />
+                Remember me
+              </label>
+              
+              <button className="text-yellow-600 text-sm font-medium cursor-pointer hover:underline">
+                Forgot Password?
+              </button>
+            </div>
           </div>
         </div>
 
         {/* BUTTON */}
-        <button className="mt-8 w-full bg-gray-200 text-black py-3 rounded-lg transition font-semibold hover:bg-gray-300">
-          Sign Up
+        <button className="mt-8 w-full bg-gray-200 text-black py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+          Login
         </button>
 
         {/* ALTERNATIVE LOGIN */}
-        <p className="text-gray-400 text-sm my-4">OR</p>
+        <p className="text-gray-400 text-sm my-4">OR Log In With</p>
 
         <div className="flex gap-4">
           <button className="border py-2 flex-1 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition">
             <Image src="/google.png" alt="Google" width={20} height={20} />
             Google
           </button>
-
           <button className="border py-2 flex-1 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition">
             <Image src="/apple.png" alt="Apple" width={20} height={20} />
             Apple
           </button>
         </div>
 
-        {/* Already have account */}
+        {/* NO ACCOUNT → REGISTER */}
         <p className="mt-6 text-sm">
-          Already have an account?{" "}
+          Don’t have an account?{" "}
           <span
             className="text-yellow-600 font-medium cursor-pointer hover:underline"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push("/signup")}
           >
-            Login here
+            Register here
           </span>
         </p>
 
       </div>
 
-      {/* RIGHT SECTION - Image + Message */}
-      <div className="w-1/2 bg-gray-100 flex flex-col items-center justify-center text-center relative">
+        {/* RIGHT SECTION - Image + Message */}
+        <div className="w-1/2 bg-gray-100 flex flex-col items-center justify-center text-center relative">
 
         <h3 className="text-2xl font-semibold text-gray-700 px-16 mb-6">
-          "Productivity is a habit — and today you're choosing progress."
+            "Productivity is a habit — and today you're choosing progress."
         </h3>
 
         {/* Floating Group */}
         <div className="relative animate-bounce-slow">
 
-          {/* Main Device Image */}
-          <Image
+            {/* Main Device Image */}
+            <Image
             src="/Devices.png"
             alt="Devices"
             width={520}
             height={520}
             className="drop-shadow-lg"
-          />
+            />
 
-          {/* Big Coin */}
-          <Image
+            {/* Big Coin */}
+            <Image
             src="/coin.png"
             alt="coin"
             width={90}
             height={90}
             className="absolute -right-10 top-10 drop-shadow-xl animate-coinFloat"
-          />
+            />
 
-          {/* Small Coin */}
-          <Image
+            {/* Small Coin */}
+            <Image
             src="/coin.png"
             alt="coin"
             width={55}
             height={55}
             className="absolute bottom-5 -left-8 drop-shadow-lg animate-coinFloatDelay"
-          />
+            />
         </div>
-      </div>
+        </div>
 
 
-      {/* ANIMATION STYLE */}
+      {/* ANIMATION */}
       <style jsx>{`
         .animate-bounce-slow {
           animation: bounce 4s ease-in-out infinite;
