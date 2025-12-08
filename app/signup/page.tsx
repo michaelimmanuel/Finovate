@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -15,18 +16,17 @@ export default function SignUp() {
 
   return (
     <div className="flex h-screen relative overflow-hidden">
-
       {/* LEFT SECTION */}
       <div className="w-1/2 bg-white flex flex-col justify-center px-20 text-center shadow-lg">
-        
         <h2 className="text-4xl font-bold mb-3">Create Account</h2>
         <p className="text-gray-500 mb-10">Join us and start your journey 🚀</p>
 
         {/* INPUTS */}
         <div className="space-y-5 text-left">
-          
           <div>
-            <label className="text-sm font-medium text-gray-700">Full Name</label>
+            <label className="text-sm font-medium text-gray-700">
+              Full Name
+            </label>
             <input
               type="text"
               className="border rounded-lg w-full px-4 py-2 mt-1 focus:ring focus:ring-blue-200"
@@ -48,7 +48,9 @@ export default function SignUp() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700">Password</label>
+            <label className="text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
               type="password"
               className="border rounded-lg w-full px-4 py-2 mt-1 focus:ring focus:ring-blue-200"
@@ -60,9 +62,11 @@ export default function SignUp() {
         </div>
 
         {/* BUTTON */}
-        <button className="mt-8 w-full bg-gray-200 text-black py-3 rounded-lg transition font-semibold hover:bg-gray-300">
-          Sign Up
-        </button>
+        <Link href="/onboard">
+          <button className="mt-8 w-full bg-gray-200 text-black py-3 rounded-lg transition font-semibold hover:bg-gray-300">
+            Sign Up
+          </button>
+        </Link>
 
         <p className="text-gray-400 text-sm my-4">OR</p>
 
@@ -93,14 +97,12 @@ export default function SignUp() {
 
       {/* RIGHT SECTION */}
       <div className="w-1/2 bg-gray-100 flex flex-col items-center justify-center text-center relative">
-
         <h3 className="text-2xl font-semibold text-gray-700 px-16 mb-6">
           "Success starts with the first step — and you've already taken it."
         </h3>
 
         {/* FLOATING UI */}
         <div className="relative animate-bounce-slow">
-
           <Image
             src="/Devices.png"
             alt="Devices"
@@ -136,8 +138,13 @@ export default function SignUp() {
         }
 
         @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-18px); }
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-18px);
+          }
         }
 
         .animate-coinFloat {
@@ -150,8 +157,13 @@ export default function SignUp() {
         }
 
         @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-14px) rotate(8deg); }
+          0%,
+          100% {
+            transform: translateY(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-14px) rotate(8deg);
+          }
         }
       `}</style>
     </div>

@@ -1,45 +1,170 @@
-import { Modal } from "@/components/ui/modal";
-import React from "react";
+"use client";
 
-export function NewsModal({ modalNews, onClose }: { modalNews: any, onClose: () => void }) {
+import { Modal } from "@/components/ui/modal";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { newsData } from "@/components/news/newsData";
+
+export function NewsModal({
+  modalNews,
+  onClose,
+}: {
+  modalNews: any;
+  onClose: () => void;
+}) {
   if (!modalNews) return null;
+
+  const relatedNews = modalNews.tag
+    ? Object.values(newsData)
+        .flat()
+        .filter((n) => n.tag === modalNews.tag && n.href !== modalNews.href)
+        .slice(0, 6)
+    : [];
+
+  // Sidebar dummy content
+  const opinion = [
+    {
+      title: "Market discipline still matters",
+      summary: "Quality plus disciplined cash deployment still compounds best.",
+    },
+  ];
+
+  const mostRead = Object.values(newsData).flat().slice(0, 3);
+
+  const content = modalNews.content || [modalNews.summary];
+
   return (
     <Modal open={!!modalNews} onClose={onClose}>
-      <div className="w-[75vw] max-w-5xl mx-auto py-20 h-screen">
-        {modalNews.imageSrc && (
-          <img src={modalNews.imageSrc} alt={modalNews.imageAlt || modalNews.title} className="w-full rounded-lg mb-4" />
-        )}
-        {modalNews.sponsoredBrand && (
-          <div className="text-xs text-muted-foreground mt-2">Sponsored by {modalNews.sponsoredBrand}</div>
-        )}
-        <h2 className="font-heading text-2xl mb-2">{modalNews.title}</h2>
-        <div className="text-xs text-muted-foreground mb-2">{modalNews.date} • John Doe {modalNews.tag && <>• {modalNews.tag}</>}</div>
-        <div className="text-base mb-4">{modalNews.summary}</div>
+      <div className="h-full w-[85vw] max-w-7xl mx-auto py-12 grid lg:grid-cols-12 gap-10">
+        {/* Main content */}
+        <div className="lg:col-span-8 space-y-6 overflow-y-auto max-h-[90vh] pr-4">
+          {/* Header */}
+          <h2 className="font-heading text-3xl">{modalNews.title}</h2>
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground items-center">
+            {modalNews.sponsoredBrand && (
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full uppercase tracking-wide">
+                Sponsored by {modalNews.sponsoredBrand}
+              </span>
+            )}
+            <span>{modalNews.date}</span>
+            {modalNews.tag && (
+              <span className="uppercase">{modalNews.tag}</span>
+            )}
+            <span>• John Doe</span>
+          </div>
 
-        <div className="text-justify">
-        <p className="text-sm leading-relaxed mb-2">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam enim, nec dictum urna quam nec urna. Proin ac neque nec nisi cursus finibus. Mauris euismod, sapien nec laoreet cursus, enim erat dictum urna, at cursus enim erat nec urna. Sed euismod, urna eu tincidunt consectetur, nisi nisl aliquam enim, nec dictum urna quam nec urna. Proin ac neque nec nisi cursus finibus. Mauris euismod, sapien nec laoreet cursus, enim erat dictum urna, at cursus enim erat nec urna.
-        </p>
-        <p className="text-sm leading-relaxed mb-2">
-            Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Integer euismod, urna eu tincidunt consectetur, nisi nisl aliquam enim, nec dictum urna quam nec urna. Proin ac neque nec nisi cursus finibus. Mauris euismod, sapien nec laoreet cursus, enim erat dictum urna, at cursus enim erat nec urna.
-        </p>
-        <p className="text-sm leading-relaxed mb-2">
-        Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Suspendisse potenti. Etiam euismod, urna eu tincidunt consectetur, nisi nisl aliquam enim, nec dictum urna quam nec urna, nec dictum urna quam nec urna.
-        </p>
-        <p className="text-sm leading-relaxed mb-2">
-        Integer euismod, urna eu tincidunt consectetur, nisi nisl aliquam enim, nec dictum urna quam nec urna. Proin ac neque nec nisi cursus finibus. Mauris euismod, sapien nec laoreet cursus, enim erat dictum urna, at cursus enim erat nec urna.
-        </p>
-        <p className="text-sm leading-relaxed mb-2">
-        Nullam ac urna eu felis dapibus condimentum sit amet a augue. Sed non neque elit. Sed ut imperdiet nisi. Proin condimentum fermentum nunc. Etiam pharetra, erat sed fermentum feugiat, velit mauris egestas quam, ut aliquam massa nisl quis neque.
-        </p>
-        <p className="text-sm leading-relaxed mb-2">
-        Mauris euismod, sapien nec laoreet cursus, enim erat dictum urna, at cursus enim erat nec urna. Sed euismod, urna eu tincidunt consectetur, nisi nisl aliquam enim, nec dictum urna quam nec urna.
-        </p>
-        <p className="text-sm leading-relaxed mb-2">
-        Etiam euismod, urna eu tincidunt consectetur, nisi nisl aliquam enim, nec dictum urna quam nec urna. Proin ac neque nec nisi cursus finibus. Mauris euismod, sapien nec laoreet cursus, enim erat dictum urna, at cursus enim erat nec urna.
-        </p>
+          {/* Image */}
+          {modalNews.imageSrc && (
+            <img
+              src={modalNews.imageSrc}
+              alt={modalNews.imageAlt || modalNews.title}
+              className="w-full max-h-[400px] object-cover rounded-lg"
+            />
+          )}
+
+          {/* Article content */}
+          <div className="space-y-4">
+            {Array.isArray(modalNews.content) ? (
+              modalNews.content.map((p: string, i: number) => (
+                <p key={i}>{p}</p>
+              ))
+            ) : (
+              <p>{modalNews.summary}</p>
+            )}
+          </div>
+
+          {/* Related news */}
+          {relatedNews.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-heading text-xl mb-4">Related news</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {relatedNews.map((n) => (
+                  <a
+                    key={n.href}
+                    href={n.href}
+                    className="flex flex-col border rounded-lg p-3 hover:shadow-md transition transform hover:-translate-y-1"
+                  >
+                    {n.imageSrc && (
+                      <img
+                        src={n.imageSrc}
+                        alt={n.imageAlt || n.title}
+                        className="h-30 w-full object-cover rounded-md mb-2"
+                      />
+                    )}
+                    <span className="text-[10px] text-muted-foreground">
+                      {n.date}
+                    </span>
+                    <h4 className="font-semibold text-sm line-clamp-2">
+                      {n.title}
+                    </h4>
+                    {n.tag && (
+                      <span className="text-[10px] uppercase mt-1 text-gray-500">
+                        {n.tag}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        
+
+        {/* Sidebar kanan */}
+        <aside className="lg:col-span-4 flex flex-col gap-8">
+          {/* Opinion */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center">
+                <div className="border-l-4 border-accent mr-4 h-6" />
+                <CardTitle className="font-heading text-2xl">Opinion</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+              {opinion.map((o, i) => (
+                <div key={i}>
+                  <blockquote className="border-l-2 pl-3 text-xs md:text-sm">
+                    &ldquo;{o.summary}&rdquo;
+                  </blockquote>
+                  <div className="text-xs opacity-70">— Guest contributor</div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Most Read */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center">
+                <div className="border-l-4 border-accent mr-4 h-6" />
+                <CardTitle className="font-heading text-2xl">
+                  Most Read
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {mostRead.map((it) => (
+                <div key={it.href} className="cursor-pointer">
+                  <div className="border rounded-lg p-2 flex gap-2 hover:shadow-md transition">
+                    {it.imageSrc && (
+                      <img
+                        src={it.imageSrc}
+                        alt={it.imageAlt || it.title}
+                        className="h-12 w-16 object-cover rounded-md"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-sm line-clamp-2">
+                        {it.title}
+                      </h4>
+                      <span className="text-[10px] text-muted-foreground">
+                        {it.date}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </aside>
       </div>
     </Modal>
   );
