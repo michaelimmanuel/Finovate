@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ListSelect } from "@/components/onboarding/ListSelect";
+import { AlertModal } from "@/components/onboarding/AlertModal";
 import { IconSelect } from "@/components/onboarding/IconSelect";
 import { MultiCapsuleSelect } from "@/components/onboarding/MultiCapsuleSelect";
 import { InputField, SelectField } from "@/components/onboarding/Inputs";
@@ -9,12 +11,11 @@ import { InputField, SelectField } from "@/components/onboarding/Inputs";
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const total = 6;
+  const router = useRouter();
 
-  //-----------------------------------------
-  // STATES FOR EACH STEP
-  //-----------------------------------------
   const [welcomeChoice, setWelcomeChoice] = useState("");
-  const [sourceChoice, setSourceChoice] = useState("");
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [job, setJob] = useState("");
@@ -25,16 +26,13 @@ export default function OnboardingPage() {
   const [media3, setMedia3] = useState("");
   const [aiChoice, setAiChoice] = useState("");
 
-  //-----------------------------------------
-  // RENDER STEP UI
-  //-----------------------------------------
   function renderStep() {
     switch (step) {
       // STEP 1 — Welcome
       case 0:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">
               What brings you to Finnovate?
             </h2>
 
@@ -42,24 +40,27 @@ export default function OnboardingPage() {
               selected={welcomeChoice}
               setSelected={setWelcomeChoice}
               options={[
-                { label: "To learn about investing", icon: "/icons/learn.png" },
+                {
+                  label: "To learn about investing",
+                  icon: "/onboard/learn.png",
+                },
                 {
                   label: "To understand market news",
-                  icon: "/icons/company.png",
+                  icon: "/onboard/analysis.png",
                 },
                 {
                   label: "To get financial advice with AI",
-                  icon: "/icons/project.png",
+                  icon: "/onboard/ai.png",
                 },
                 {
                   label: "To improve my budgeting",
-                  icon: "/icons/inspiration.png",
+                  icon: "/onboard/budget.png",
                 },
                 {
                   label: "To join community discussions",
-                  icon: "/icons/all.png",
+                  icon: "/onboard/community.png",
                 },
-                { label: "Just look around", icon: "/icons/all.png" },
+                { label: "Just look around", icon: "/onboard/look.png" },
               ]}
             />
           </div>
@@ -69,64 +70,44 @@ export default function OnboardingPage() {
       case 1:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">
               Where did you hear about us?
             </h2>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 md:gap-6">
               <IconSelect
-                icon={
-                  <svg className="w-8 h-8">
-                    <circle cx="12" cy="12" r="10" fill="#E4405F" />
-                  </svg>
-                }
+                icon="/onboard/instagram.png"
                 label="Instagram"
-                selected={sourceChoice === "Instagram"}
-                onClick={() => setSourceChoice("Instagram")}
+                selected={selectedOption === "Instagram"}
+                onClick={() => setSelectedOption("Instagram")}
               />
 
               <IconSelect
-                icon={
-                  <svg className="w-8 h-8">
-                    <circle cx="12" cy="12" r="10" fill="#000000" />
-                  </svg>
-                }
+                icon="/onboard/tiktok.png"
                 label="TikTok"
-                selected={sourceChoice === "TikTok"}
-                onClick={() => setSourceChoice("TikTok")}
+                selected={selectedOption === "TikTok"}
+                onClick={() => setSelectedOption("TikTok")}
               />
 
               <IconSelect
-                icon={
-                  <svg className="w-8 h-8">
-                    <circle cx="12" cy="12" r="10" fill="#1DA1F2" />
-                  </svg>
-                }
-                label="Twitter / X"
-                selected={sourceChoice === "Twitter/X"}
-                onClick={() => setSourceChoice("Twitter/X")}
+                icon="/onboard/youtube.png"
+                label="Youtube"
+                selected={selectedOption === "Youtube"}
+                onClick={() => setSelectedOption("Youtube")}
               />
 
               <IconSelect
-                icon={
-                  <svg className="w-8 h-8">
-                    <circle cx="12" cy="12" r="10" fill="#22c55e" />
-                  </svg>
-                }
-                label="Friend"
-                selected={sourceChoice === "Friend"}
-                onClick={() => setSourceChoice("Friend")}
+                icon="/onboard/twitter.png"
+                label="Twitter"
+                selected={selectedOption === "Twitter"}
+                onClick={() => setSelectedOption("Twitter")}
               />
 
               <IconSelect
-                icon={
-                  <svg className="w-8 h-8">
-                    <rect width="24" height="16" rx="2" fill="#FF0000" />
-                  </svg>
-                }
-                label="YouTube"
-                selected={sourceChoice === "YouTube"}
-                onClick={() => setSourceChoice("YouTube")}
+                icon="/onboard/other.png"
+                label="Others"
+                selected={selectedOption === "Others"}
+                onClick={() => setSelectedOption("Others")}
               />
             </div>
           </div>
@@ -136,7 +117,7 @@ export default function OnboardingPage() {
       case 2:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Tell me more about you!</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">Tell me more about you!</h2>
 
             <InputField label="Your name" value={name} setValue={setName} />
             <InputField label="Age" value={age} setValue={setAge} />
@@ -145,7 +126,13 @@ export default function OnboardingPage() {
               label="Your job"
               value={job}
               setValue={setJob}
-              options={["Student", "Freelancer", "Employee", "Entrepreneur"]}
+              options={[
+                "Student",
+                "Freelancer",
+                "Employee",
+                "Entrepreneur",
+                "Others",
+              ]}
             />
 
             <SelectField
@@ -158,6 +145,7 @@ export default function OnboardingPage() {
                 "Finance",
                 "Creative",
                 "Engineering",
+                "Journalism",
               ]}
             />
           </div>
@@ -167,7 +155,7 @@ export default function OnboardingPage() {
       case 3:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">
               Which financial topics interest you most?
             </h2>
 
@@ -200,7 +188,7 @@ export default function OnboardingPage() {
       case 4:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Your media habits</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">Your media habits</h2>
 
             <SelectField
               label="How do you usually consume financial content?"
@@ -239,7 +227,7 @@ export default function OnboardingPage() {
       case 5:
         return (
           <div>
-            <h2 className="text-2xl font-bold mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">
               How do you plan to use our AI Financial Assistant?
             </h2>
 
@@ -247,11 +235,20 @@ export default function OnboardingPage() {
               selected={aiChoice}
               setSelected={setAiChoice}
               options={[
-                { label: "Daily AI recommendations" },
-                { label: "Portfolio tracking" },
-                { label: "Learning finance concepts" },
-                { label: "Market analysis summaries" },
-                { label: "Budgeting help" },
+                {
+                  label: "Daily AI recommendations",
+                  icon: "/onboard/recommend.png",
+                },
+                { label: "Portfolio tracking", icon: "/onboard/porto.png" },
+                {
+                  label: "Learning finance concepts",
+                  icon: "/onboard/finance.png",
+                },
+                {
+                  label: "Market analysis summaries",
+                  icon: "/onboard/money.png",
+                },
+                { label: "Budgeting help", icon: "/onboard/budgeting.png" },
               ]}
             />
           </div>
@@ -260,9 +257,9 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex w-full h-screen bg-white">
+    <div className="flex w-full min-h-screen bg-white">
       {/* LEFT SIDE */}
-      <div className="w-1/2 px-16 py-12 flex flex-col justify-between">
+      <div className="w-full md:w-1/2 md:px-16 px-10 md:py-12 py-6 flex flex-col justify-between">
         <div>
           {/* Progress */}
           <p className="text-sm text-gray-500 mb-2">
@@ -291,22 +288,36 @@ export default function OnboardingPage() {
 
           <button
             onClick={() => {
-              if (step < total - 1) setStep(step + 1);
-              else alert("Completed onboarding!");
+              if (step < total - 1) {
+                setStep(step + 1);
+              } else {
+                setShowCompleteModal(true);
+              }
             }}
-            className="px-6 py-2 bg-amber-400 text-white rounded-md"
+            className="px-4 py-1 md:px-6 md:py-2 bg-amber-400 text-white rounded-md 
+             transition-all duration-200 hover:bg-amber-400/80 hover:scale-[1.03] cursor-pointer"
           >
             {step === total - 1 ? "Finish" : "Continue →"}
           </button>
         </div>
       </div>
-
       {/* RIGHT ILLUSTRATION */}
-      <div className="w-1/2 bg-gray-50 flex items-center justify-center">
+      <div className="w-1/2 md:flex items-center justify-center hidden">
         <div className="w-[70%] h-[70%] bg-gray-200 rounded-xl flex items-center justify-center">
-          <span className="text-gray-500">[ Illustration ]</span>
+          <img src="/onboard/all.png" alt="" />
         </div>
       </div>
+      <AlertModal
+        open={showCompleteModal}
+        onClose={() => {
+          setShowCompleteModal(false);
+          router.push("/news");
+        }}
+        title="Onboarding Completed!"
+      >
+        🎉 You're all set. Thanks for completing the setup!
+      </AlertModal>
+      ;
     </div>
   );
 }
