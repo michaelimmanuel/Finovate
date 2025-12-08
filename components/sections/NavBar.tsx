@@ -40,6 +40,8 @@ export function NavBar() {
         <nav className="hidden lg:flex items-center gap-2 rounded-full border border-accent/40 bg-black/90 text-white px-3 py-2 shadow-sm relative">
           <a href="#hero" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Home</a>
           <span className="opacity-50">•</span>
+          <a href="/discussion" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Discussion</a>
+          <span className="opacity-50">•</span>
           <div className="relative">
             <button
               type="button"
@@ -90,6 +92,7 @@ export function NavBar() {
           {mobileOpen && (
             <div className="absolute right-4 left-4 top-16 z-50 rounded-xl border border-black/10 bg-white shadow-lg p-2">
               <a href="#hero" className="block rounded-md px-3 py-2 hover:bg-black/5">Home</a>
+              <a href="/discussion" className="block rounded-md px-3 py-2 hover:bg-black/5">Discussion</a>
               <a href="/digest" className="block rounded-md px-3 py-2 hover:bg-black/5">Daily Digest</a>
               <a href="/tools/budget-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Budget Tracker</a>
               <a href="/tools/savings-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Savings Tracker</a>
