@@ -16,13 +16,13 @@ export default function SignUp() {
   return (
     <div className="flex h-screen relative overflow-hidden">
 
-      {/* LEFT - FORM */}
-      <div className="w-1/2 bg-white flex flex-col justify-center px-20 text-center">
+      {/* LEFT SECTION */}
+      <div className="w-1/2 bg-white flex flex-col justify-center px-20 text-center shadow-lg">
         
         <h2 className="text-4xl font-bold mb-3">Create Account</h2>
         <p className="text-gray-500 mb-10">Join us and start your journey 🚀</p>
 
-        {/* FORM INPUTS */}
+        {/* INPUTS */}
         <div className="space-y-5 text-left">
           
           <div>
@@ -64,9 +64,9 @@ export default function SignUp() {
           Sign Up
         </button>
 
-        {/* ALTERNATIVE LOGIN */}
         <p className="text-gray-400 text-sm my-4">OR</p>
 
+        {/* SOCIAL LOGIN */}
         <div className="flex gap-4">
           <button className="border py-2 flex-1 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition">
             <Image src="/google.png" alt="Google" width={20} height={20} />
@@ -79,7 +79,7 @@ export default function SignUp() {
           </button>
         </div>
 
-        {/* Already have account */}
+        {/* NAVIGATE TO LOGIN */}
         <p className="mt-6 text-sm">
           Already have an account?{" "}
           <span
@@ -89,20 +89,18 @@ export default function SignUp() {
             Login here
           </span>
         </p>
-
       </div>
 
-      {/* RIGHT SECTION - Image + Message */}
+      {/* RIGHT SECTION */}
       <div className="w-1/2 bg-gray-100 flex flex-col items-center justify-center text-center relative">
 
         <h3 className="text-2xl font-semibold text-gray-700 px-16 mb-6">
-          "Productivity is a habit — and today you're choosing progress."
+          "Success starts with the first step — and you've already taken it."
         </h3>
 
-        {/* Floating Group */}
+        {/* FLOATING UI */}
         <div className="relative animate-bounce-slow">
 
-          {/* Main Device Image */}
           <Image
             src="/Devices.png"
             alt="Devices"
@@ -115,31 +113,45 @@ export default function SignUp() {
           <Image
             src="/coin.png"
             alt="coin"
-            width={90}
-            height={90}
-            className="absolute -right-10 top-10 drop-shadow-xl animate-coinFloat"
+            width={110}
+            height={110}
+            className="absolute -right-12 top-6 drop-shadow-xl animate-coinFloat"
           />
 
           {/* Small Coin */}
           <Image
             src="/coin.png"
             alt="coin"
-            width={55}
-            height={55}
-            className="absolute bottom-5 -left-8 drop-shadow-lg animate-coinFloatDelay"
+            width={65}
+            height={65}
+            className="absolute bottom-7 -left-10 drop-shadow-lg animate-coinFloatDelay"
           />
         </div>
       </div>
 
-
-      {/* ANIMATION STYLE */}
+      {/* ANIMATION CSS */}
       <style jsx>{`
         .animate-bounce-slow {
           animation: bounce 4s ease-in-out infinite;
         }
+
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-18px); }
+        }
+
+        .animate-coinFloat {
+          animation: float 5s ease-in-out infinite;
+        }
+
+        .animate-coinFloatDelay {
+          animation: float 5s ease-in-out infinite;
+          animation-delay: 1.5s;
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-14px) rotate(8deg); }
         }
       `}</style>
     </div>

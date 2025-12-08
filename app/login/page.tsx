@@ -18,14 +18,14 @@ export default function Login() {
     <div className="flex h-screen relative overflow-hidden">
 
       {/* LEFT - FORM */}
-      <div className="w-1/2 bg-white flex flex-col justify-center px-20 text-center">
-        
+      <div className="w-1/2 bg-white flex flex-col justify-center px-20 text-center shadow-lg">
+
         <h2 className="text-4xl font-bold mb-3">Welcome Back</h2>
         <p className="text-gray-500 mb-10">Log in to continue 🚀</p>
 
         {/* INPUTS */}
         <div className="space-y-5 text-left">
-          
+
           <div>
             <label className="text-sm font-medium text-gray-700">Email</label>
             <input
@@ -57,7 +57,7 @@ export default function Login() {
                 />
                 Remember me
               </label>
-              
+
               <button className="text-yellow-600 text-sm font-medium cursor-pointer hover:underline">
                 Forgot Password?
               </button>
@@ -84,7 +84,7 @@ export default function Login() {
           </button>
         </div>
 
-        {/* NO ACCOUNT → REGISTER */}
+        {/* REGISTER LINK */}
         <p className="mt-6 text-sm">
           Don’t have an account?{" "}
           <span
@@ -97,54 +97,68 @@ export default function Login() {
 
       </div>
 
-        {/* RIGHT SECTION - Image + Message */}
-        <div className="w-1/2 bg-gray-100 flex flex-col items-center justify-center text-center relative">
+      {/* RIGHT SECTION */}
+      <div className="w-1/2 bg-gray-100 flex flex-col items-center justify-center text-center relative">
 
         <h3 className="text-2xl font-semibold text-gray-700 px-16 mb-6">
-            "Productivity is a habit — and today you're choosing progress."
+          "Productivity is a habit — and today you're choosing progress."
         </h3>
 
-        {/* Floating Group */}
+        {/* Floating Art */}
         <div className="relative animate-bounce-slow">
 
-            {/* Main Device Image */}
-            <Image
+          {/* Main Device Image */}
+          <Image
             src="/Devices.png"
             alt="Devices"
             width={520}
             height={520}
             className="drop-shadow-lg"
-            />
+          />
 
-            {/* Big Coin */}
-            <Image
+          {/* Big Coin */}
+          <Image
             src="/coin.png"
             alt="coin"
-            width={90}
-            height={90}
-            className="absolute -right-10 top-10 drop-shadow-xl animate-coinFloat"
-            />
+            width={110}
+            height={110}
+            className="absolute -right-12 top-6 drop-shadow-xl animate-coinFloat"
+          />
 
-            {/* Small Coin */}
-            <Image
+          {/* Small Coin */}
+          <Image
             src="/coin.png"
             alt="coin"
-            width={55}
-            height={55}
-            className="absolute bottom-5 -left-8 drop-shadow-lg animate-coinFloatDelay"
-            />
+            width={65}
+            height={65}
+            className="absolute bottom-7 -left-10 drop-shadow-lg animate-coinFloatDelay"
+          />
         </div>
-        </div>
+      </div>
 
-
-      {/* ANIMATION */}
+      {/* ANIMATION CSS */}
       <style jsx>{`
         .animate-bounce-slow {
           animation: bounce 4s ease-in-out infinite;
         }
+
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-18px); }
+        }
+
+        .animate-coinFloat {
+          animation: float 5s ease-in-out infinite;
+        }
+
+        .animate-coinFloatDelay {
+          animation: float 5s ease-in-out infinite;
+          animation-delay: 1.5s;
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-14px) rotate(8deg); }
         }
       `}</style>
     </div>
