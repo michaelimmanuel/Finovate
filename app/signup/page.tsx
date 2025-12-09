@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SignUp() {
   const router = useRouter();
@@ -60,9 +61,11 @@ export default function SignUp() {
         </div>
 
         {/* BUTTON */}
+        <Link href="/onboard">
         <button className="mt-8 w-full bg-gray-200 text-black py-3 rounded-lg transition font-semibold hover:bg-gray-300">
           Sign Up
         </button>
+        </Link>
 
         <p className="text-gray-400 text-sm my-4">OR</p>
 
