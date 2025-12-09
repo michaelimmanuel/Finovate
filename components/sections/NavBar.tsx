@@ -113,13 +113,35 @@ export function NavBar() {
           <span className="opacity-50">•</span>
           <a href="/profile" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Profile</a>
           <span className="ml-2 mr-1 h-5 w-px bg-accent/40" />
-          <Button
-            asChild
-            variant="accent"
-            className="rounded-full px-4 py-1 text-sm"
-          >
-            <Link href="/signup">Login / Register</Link>
-          </Button>
+            <Button asChild variant="accent" className="rounded-full px-4 py-1 text-sm">
+              <Link href="/signup">Login / Register</Link>
+            </Button>
+
+            {/* Profile Avatar */}
+            <div className="relative ml-3">
+              <button
+                type="button"
+                className="rounded-full border border-accent/40 bg-white/10 p-1 flex items-center justify-center hover:ring-2 hover:ring-accent transition"
+                aria-haspopup="menu"
+                aria-label="Open profile menu"
+                onClick={() => setToolsOpen((v) => !v)}
+              >
+                <img
+                  src="https://api.dicebear.com/7.x/lorelei/svg?seed=guest"
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              </button>
+              {toolsOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 min-w-[160px] rounded-xl border border-accent/40 bg-white text-black shadow-md p-2 flex flex-col z-50"
+                >
+                  <Link href="/profile" className="rounded-md px-3 py-2 hover:bg-accent/10 transition-colors">Profile</Link>
+                  <button className="rounded-md px-3 py-2 text-left hover:bg-accent/10 transition-colors">Logout</button>
+                </div>
+              )}
+            </div>
         </nav>
         {/* Mobile nav: hamburger + dropdown */}
         <div className="lg:hidden">
@@ -153,6 +175,11 @@ export function NavBar() {
               >
                 Login / Register
               </Link>
+                <div className="flex items-center gap-2 mt-3">
+                  <img src="https://api.dicebear.com/7.x/lorelei/svg?seed=guest" alt="Profile" className="w-8 h-8 rounded-full object-cover" />
+                  <Link href="/profile" className="rounded-md px-3 py-2 hover:bg-accent/10 transition-colors">Profile</Link>
+                  <button className="rounded-md px-3 py-2 text-left hover:bg-accent/10 transition-colors">Logout</button>
+                </div>
             </div>
           )}
         </div>
