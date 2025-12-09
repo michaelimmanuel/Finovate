@@ -246,9 +246,9 @@ export default function DiscussionPage() {
      Render
   ----------------------------- */
   return (
-    <main className="flex gap-6 w-full max-w-7xl mx-auto px-4 py-8">
+    <main className="flex flex-col lg:flex-row gap-6 w-full max-w-7xl mx-auto px-4 py-8">
       {/* LEFT SIDEBAR */}
-      <aside className="w-60 sticky top-6 h-fit">
+      <aside className="w-full lg:w-60 sticky top-6 h-fit mb-6 lg:mb-0">
         <h3 className="font-bold mb-4 text-lg">RECOMMENDED PEOPLE</h3>
 
         <div className="flex flex-col gap-3 mb-10">
@@ -305,7 +305,7 @@ export default function DiscussionPage() {
           {postsByCategory[activeCategory]?.map((post) => (
             <article
               key={post.id}
-              className="bg-white rounded-lg shadow p-4 cursor-pointer hover:bg-accent/10 transition flex gap-4"
+              className="bg-white rounded-lg shadow p-4 cursor-pointer hover:bg-accent/10 transition flex flex-col md:flex-row gap-4"
               onClick={() => setOpenPost(post)}
             >
               <img
@@ -334,7 +334,7 @@ export default function DiscussionPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between mt-auto pt-2 border-t">
+                <div className="flex items-center justify-between mt-auto pt-2 border-t flex-wrap gap-2">
                   <div className="text-xs text-muted-foreground">
                     {post.comments.length} comment
                     {post.comments.length !== 1 ? "s" : ""}
