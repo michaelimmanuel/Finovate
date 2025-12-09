@@ -53,6 +53,8 @@ export function NavBar() {
             Home
           </Link>
           <span className="opacity-50">•</span>
+          <a href="/discussion" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Discussion</a>
+          <span className="opacity-50">•</span>
           <div className="relative">
             <button
               type="button"
@@ -135,42 +137,12 @@ export function NavBar() {
           </button>
           {mobileOpen && (
             <div className="absolute right-4 left-4 top-16 z-50 rounded-xl border border-black/10 bg-white shadow-lg p-2">
-              <a
-                href="#hero"
-                className="block rounded-md px-3 py-2 hover:bg-black/5"
-              >
-                Home
-              </a>
-              <a
-                href="/digest"
-                className="block rounded-md px-3 py-2 hover:bg-black/5"
-              >
-                Daily Digest
-              </a>
-              <a
-                href="/tools/budget-tracker"
-                className="block rounded-md px-3 py-2 hover:bg-black/5"
-              >
-                Budget Tracker
-              </a>
-              <a
-                href="/tools/savings-tracker"
-                className="block rounded-md px-3 py-2 hover:bg-black/5"
-              >
-                Savings Tracker
-              </a>
-              <a
-                href="#analysis"
-                className="block rounded-md px-3 py-2 hover:bg-black/5"
-              >
-                AI Analysis
-              </a>
-              <a
-                href="/news"
-                className="block rounded-md px-3 py-2 hover:bg-black/5"
-              >
-                News
-              </a>
+              <a href="#hero" className="block rounded-md px-3 py-2 hover:bg-black/5">Home</a>
+              <a href="/digest" className="block rounded-md px-3 py-2 hover:bg-black/5">Daily Digest</a>
+              <a href="/tools/budget-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Budget Tracker</a>
+              <a href="/tools/savings-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Savings Tracker</a>
+              <a href="#analysis" className="block rounded-md px-3 py-2 hover:bg-black/5">AI Analysis</a>
+              <a href="/news" className="block rounded-md px-3 py-2 hover:bg-black/5">News</a>
               <div className="mt-2 border-t border-black/10" />
               <Link
                 href="/signup"
