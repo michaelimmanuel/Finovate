@@ -138,6 +138,7 @@ export function NavBar() {
           {mobileOpen && (
             <div className="absolute right-4 left-4 top-16 z-50 rounded-xl border border-black/10 bg-white shadow-lg p-2">
               <a href="#hero" className="block rounded-md px-3 py-2 hover:bg-black/5">Home</a>
+              <a href="/discussion" className="block rounded-md px-3 py-2 hover:bg-black/5">Discussion</a>
               <a href="/digest" className="block rounded-md px-3 py-2 hover:bg-black/5">Daily Digest</a>
               <a href="/tools/budget-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Budget Tracker</a>
               <a href="/tools/savings-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Savings Tracker</a>

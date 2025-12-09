@@ -94,7 +94,7 @@ export function WrappedViewer() {
   }, [index, playing])
 
   useEffect(() => {
-    setKey((k) => k + 1) // retrigger segment animation on slide change
+    setKey((k) => k + 1)
     if (playing) {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
       timeoutRef.current = window.setTimeout(playNext, msPerSlide)
