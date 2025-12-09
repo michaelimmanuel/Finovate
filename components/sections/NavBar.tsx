@@ -91,7 +91,7 @@ export function NavBar() {
                   href="/tools/savings-tracker"
                   className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors"
                 >
-                  Savings Tracker
+                  Goals and Loans
                 </a>
                 <a
                   role="menuitem"
@@ -110,6 +110,8 @@ export function NavBar() {
           >
             News
           </a>
+          <span className="opacity-50">•</span>
+          <a href="/profile" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Profile</a>
           <span className="ml-2 mr-1 h-5 w-px bg-accent/40" />
           <Button
             asChild
@@ -141,7 +143,7 @@ export function NavBar() {
               <a href="/discussion" className="block rounded-md px-3 py-2 hover:bg-black/5">Discussion</a>
               <a href="/digest" className="block rounded-md px-3 py-2 hover:bg-black/5">Daily Digest</a>
               <a href="/tools/budget-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Budget Tracker</a>
-              <a href="/tools/savings-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Savings Tracker</a>
+              <a href="/tools/savings-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Goals and Loans</a>
               <a href="#analysis" className="block rounded-md px-3 py-2 hover:bg-black/5">AI Analysis</a>
               <a href="/news" className="block rounded-md px-3 py-2 hover:bg-black/5">News</a>
               <div className="mt-2 border-t border-black/10" />

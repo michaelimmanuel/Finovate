@@ -10,7 +10,7 @@ import FeaturesOnboardingModal from "@/components/modals/Preview"
 
 export default function Home() {
   return (
-    <main className="bg-white text-black">
+    <main className="bg-white text-black z-90">
       <FeaturesOnboardingModal />
       <ScrollProgress />
       <Hero />
