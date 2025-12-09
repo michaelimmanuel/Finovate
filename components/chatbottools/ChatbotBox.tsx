@@ -10,7 +10,15 @@ type Msg = { id: string; role: "user" | "bot"; text: string };
 
 // ===== Budget keywords
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  "Food & Drink": ["coffee", "kopi", "makan", "food", "drink", "snack", "jajan"],
+  "Food & Drink": [
+    "coffee",
+    "kopi",
+    "makan",
+    "food",
+    "drink",
+    "snack",
+    "jajan",
+  ],
   Transport: ["ojek", "grab", "gojek", "bensin", "transport"],
   Shopping: ["shopping", "belanja", "market", "groceries", "sembako"],
   Bills: ["internet", "listrik", "air", "tagihan", "bills"],
@@ -73,8 +81,7 @@ function parseBudgetCommand(text: string) {
   if (!amount) return null;
 
   if (lower.includes("expense") || lower.includes("expenses")) {
-    let description =
-      text.split(/for|description/i)[1]?.trim() || "Expense";
+    let description = text.split(/for|description/i)[1]?.trim() || "Expense";
     description = description.replace(/category\s+.*/i, "").trim();
 
     let category = inferCategory(description);
@@ -213,20 +220,21 @@ function parseLoanCommand(text: string) {
   }
 
   // detect kalau user eksplisit mau catat/save
-  const saveExplicit = /(save|add|catat|masukin|input|tambah loan|simpen)/i.test(
-    lower
-  );
+  const saveExplicit =
+    /(save|add|catat|masukin|input|tambah loan|simpen)/i.test(lower);
 
   // ===== asset price / harga barang total (opsional)
   // contoh: "harga 500 juta" / "price 12 juta" / "total 30 juta"
-  const assetMatch =
-    lower.match(/(?:harga|price|total)\s+(\d+(?:[\.,]\d+)?)\s*(rb|ribu|juta|miliar|milyar)?/i);
+  const assetMatch = lower.match(
+    /(?:harga|price|total)\s+(\d+(?:[\.,]\d+)?)\s*(rb|ribu|juta|miliar|milyar)?/i
+  );
   const assetPrice = assetMatch ? parseSmartNumber(assetMatch[0]) : null;
 
   // ===== DP (opsional)
   // contoh: "dp 2 juta" / "down payment 10 juta" / "uang muka 5 juta"
-  const dpMatch =
-    lower.match(/(?:dp|down payment|uang muka)\s+(\d+(?:[\.,]\d+)?)\s*(rb|ribu|juta|miliar|milyar)?/i);
+  const dpMatch = lower.match(
+    /(?:dp|down payment|uang muka)\s+(\d+(?:[\.,]\d+)?)\s*(rb|ribu|juta|miliar|milyar)?/i
+  );
   const downPayment = dpMatch ? parseSmartNumber(dpMatch[0]) : 0;
 
   // ===== principal
@@ -234,10 +242,9 @@ function parseLoanCommand(text: string) {
   // 2) kalau gak ada, ambil angka smart number pertama
   // 3) kalau ada assetPrice + DP, principal = assetPrice - DP
   const principalMatch = lower.match(/principal\s+(\d[\d\.]*)/i);
-  let principal =
-    principalMatch
-      ? Number(principalMatch[1].replace(/\./g, ""))
-      : parseSmartNumber(text);
+  let principal = principalMatch
+    ? Number(principalMatch[1].replace(/\./g, ""))
+    : parseSmartNumber(text);
 
   if (assetPrice && assetPrice > 0) {
     principal = Math.max(0, assetPrice - (downPayment || 0));
@@ -266,9 +273,7 @@ function parseLoanCommand(text: string) {
   // ===== extra payment opsional
   const extraMatch =
     lower.match(/extra\s+(\d[\d\.]*)/i) ||
-    lower.match(
-      /tambah\s+(\d+(?:[\.,]\d+)?)\s*(rb|ribu|juta|miliar|milyar)?/i
-    );
+    lower.match(/tambah\s+(\d+(?:[\.,]\d+)?)\s*(rb|ribu|juta|miliar|milyar)?/i);
 
   let extraPaymentMonthly = 0;
   if (extraMatch) {
@@ -276,7 +281,8 @@ function parseLoanCommand(text: string) {
   }
 
   // ✅ FIX 0% bug: cek null/undefined, bukan falsy
-  if (principal == null || annualRate == null || tenorMonths == null) return null;
+  if (principal == null || annualRate == null || tenorMonths == null)
+    return null;
 
   // ===== scheme detection
   let scheme: "fixed" | "floating" = "fixed";
@@ -334,6 +340,7 @@ export default function ChatbotBox() {
   const router = useRouter();
   const { addExpense, addIncome, setActiveTab } = useBudget();
   const { addGoal, addLoan } = useGoalsLoans();
+  const [showSubCard, setShowSubCard] = useState(false);
 
   const [messages, setMessages] = useState<Msg[]>([
     {
@@ -359,6 +366,22 @@ export default function ChatbotBox() {
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
 
+  const [messageCount, setMessageCount] = useState(0);
+  const MAX_LIMIT = 5;
+
+  const handleSend = () => {
+    if (messageCount >= MAX_LIMIT) {
+      setShowSubCard(true); // BUKA POPUP
+      return;
+    }
+
+    const text = input.trim();
+    if (!text) return;
+
+    sendMessageCore(text);
+    setMessageCount((prev) => prev + 1);
+  };
+
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -378,9 +401,9 @@ export default function ChatbotBox() {
         });
         setActiveTab("overview");
         router.push("/tools/budget-tracker");
-        return `✅ Expense masuk: ${budgetCmd.description} (${budgetCmd.category}) Rp${budgetCmd.amount.toLocaleString(
-          "id-ID"
-        )}`;
+        return `✅ Expense masuk: ${budgetCmd.description} (${
+          budgetCmd.category
+        }) Rp${budgetCmd.amount.toLocaleString("id-ID")}`;
       }
 
       if (budgetCmd.type === "income") {
@@ -464,32 +487,32 @@ export default function ChatbotBox() {
     // ================== GOALS ==================
     const goalCmd = parseGoalCommand(userText);
     if (goalCmd) {
-    addGoal(goalCmd);
+      addGoal(goalCmd);
 
-    // ✅ HASH NAVIGATION YANG KEBAL (sama kayak loans)
-    const target = "/tools/savings-tracker#goals";
-    if (typeof window !== "undefined") {
+      // ✅ HASH NAVIGATION YANG KEBAL (sama kayak loans)
+      const target = "/tools/savings-tracker#goals";
+      if (typeof window !== "undefined") {
         const path = window.location.pathname.replace(/\/$/, "");
         if (path === "/tools/savings-tracker") {
-        window.location.hash = "goals";
+          window.location.hash = "goals";
         } else {
-        router.push(target);
+          router.push(target);
         }
-    } else {
+      } else {
         router.push(target);
-    }
+      }
 
-    const mode = goalCmd.targetDate
+      const mode = goalCmd.targetDate
         ? `Target date ${goalCmd.targetDate}`
         : goalCmd.monthlyContribution
         ? `Kontribusi Rp${goalCmd.monthlyContribution.toLocaleString(
             "id-ID"
-        )}/bulan`
+          )}/bulan`
         : "Belum ada target date / kontribusi bulanan";
 
-    return `✅ Goal masuk: ${goalCmd.name}\nTarget Rp${goalCmd.targetAmount.toLocaleString(
-        "id-ID"
-    )} • ${mode}`;
+      return `✅ Goal masuk: ${
+        goalCmd.name
+      }\nTarget Rp${goalCmd.targetAmount.toLocaleString("id-ID")} • ${mode}`;
     }
 
     // ================== FALLBACK ==================
@@ -507,11 +530,7 @@ export default function ChatbotBox() {
     );
   }
 
-  function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text) return;
-
+  function sendMessageCore(text: string) {
     const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -526,7 +545,39 @@ export default function ChatbotBox() {
     }, 250);
   }
 
-  return (
+  function sendMessage(e: React.FormEvent) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text) return;
+    sendMessageCore(text);
+  }
+
+  // ...
+  return showSubCard ? (
+    <div className="p-6 flex flex-col items-center justify-center text-center">
+      <div className="max-w-sm bg-white p-6 rounded-2xl shadow-lg border">
+        <h2 className="text-xl font-semibold mb-2">Upgrade Unlimited Chat</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Kamu sudah mencapai batas 5 chat. Upgrade 99K/bulan untuk akses
+          chatbot tanpa batas 🚀
+        </p>
+
+        <button
+          onClick={() => alert("Belum dihubungkan ke payment")}
+          className="w-full py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        >
+          Subscribe 99K/bulan
+        </button>
+
+        <button
+          onClick={() => setShowSubCard(false)}
+          className="w-full mt-3 py-2 text-sm text-muted-foreground hover:underline"
+        >
+          Kembali
+        </button>
+      </div>
+    </div>
+  ) : (
     <div className="flex flex-col h-full">
       <div
         ref={listRef}
@@ -548,7 +599,10 @@ export default function ChatbotBox() {
       </div>
 
       <form
-        onSubmit={sendMessage}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSend();
+        }}
         className="p-3 border-t border-muted flex gap-2 bg-white"
       >
         <input
@@ -557,6 +611,7 @@ export default function ChatbotBox() {
           placeholder="Type your message..."
           className="flex-1 rounded-md border border-input px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30"
         />
+
         <button
           type="submit"
           className="rounded-md bg-primary text-white px-4 py-2 text-sm font-medium shadow hover:bg-primary/90"
