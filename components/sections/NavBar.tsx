@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image"; // ✅ NEW: untuk avatar profile
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -9,25 +10,37 @@ export function NavBar() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  // ✅ NEW: profile dropdown state + ref
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement | null>(null);
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       const target = e.target as Node;
-      if (!menuRef.current || !buttonRef.current) return;
-      if (
-        menuRef.current.contains(target) ||
-        buttonRef.current.contains(target)
-      )
-        return;
-      setToolsOpen(false);
+
+      // --- close tools dropdown if click outside ---
+      const clickedTools =
+        menuRef.current?.contains(target) ||
+        buttonRef.current?.contains(target);
+
+      if (!clickedTools) setToolsOpen(false);
+
+      // --- close profile dropdown if click outside ---
+      const clickedProfile = profileRef.current?.contains(target);
+      if (!clickedProfile) setProfileOpen(false);
     }
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setToolsOpen(false);
+        setProfileOpen(false);
         setMobileOpen(false);
       }
     }
+
     document.addEventListener("click", onDocClick);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -39,11 +52,17 @@ export function NavBar() {
   return (
     <div className="relative z-100 mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-6">
       <div className="flex items-center justify-between text-sm">
-        <Link href="/">
-          <div className="font-heading text-2xl tracking-tight cursor-pointer">
-            Finovate
-          </div>
+        <Link href="/" className="cursor-pointer">
+          <Image
+            src="/finovatelogo.png"
+            alt="Finovate Logo"
+            width={160}
+            height={40}
+            priority
+            className="object-contain hover:opacity-80 transition"
+          />
         </Link>
+
         {/* Desktop capsule nav */}
         <nav className="hidden lg:flex items-center gap-2 rounded-full border border-accent/40 bg-black/90 text-white px-3 py-2 shadow-sm relative">
           <Link
@@ -52,9 +71,19 @@ export function NavBar() {
           >
             Home
           </Link>
+
           <span className="opacity-50">•</span>
-          <a href="/discussion" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Discussion</a>
+
+          <a
+            href="/discussion"
+            className="rounded-full px-3 py-1 hover:text-accent transition-colors"
+          >
+            Discussion
+          </a>
+
           <span className="opacity-50">•</span>
+
+          {/* TOOLS DROPDOWN (punya kamu, tetap) */}
           <div className="relative">
             <button
               type="button"
@@ -66,6 +95,7 @@ export function NavBar() {
             >
               Tools <ChevronDown className="size-4" />
             </button>
+
             {toolsOpen && (
               <div
                 role="menu"
@@ -103,47 +133,60 @@ export function NavBar() {
               </div>
             )}
           </div>
+
           <span className="opacity-50">•</span>
+
           <a
             href="/news"
             className="rounded-full px-3 py-1 hover:text-accent transition-colors"
           >
             News
           </a>
-          <span className="opacity-50">•</span>
-          <a href="/profile" className="rounded-full px-3 py-1 hover:text-accent transition-colors">Profile</a>
-          <span className="ml-2 mr-1 h-5 w-px bg-accent/40" />
-            <Button asChild variant="accent" className="rounded-full px-4 py-1 text-sm">
-              <Link href="/signup">Login / Register</Link>
-            </Button>
 
-            {/* Profile Avatar */}
-            <div className="relative ml-3">
-              <button
-                type="button"
-                className="rounded-full border border-accent/40 bg-white/10 p-1 flex items-center justify-center hover:ring-2 hover:ring-accent transition"
-                aria-haspopup="menu"
-                aria-label="Open profile menu"
-                onClick={() => setToolsOpen((v) => !v)}
-              >
-                <img
-                  src="https://api.dicebear.com/7.x/lorelei/svg?seed=guest"
-                  alt="Profile"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              </button>
-              {toolsOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 mt-2 min-w-[160px] rounded-xl border border-accent/40 bg-white text-black shadow-md p-2 flex flex-col z-50"
+          {/* AUTH BUTTON (punya kamu, tetap) */}
+          <span className="ml-2 mr-1 h-5 w-px bg-accent/40" />
+          <Button
+            asChild
+            variant="accent"
+            className="rounded-full px-4 py-1 text-sm"
+          >
+            <Link href="/signup">Login / Register</Link>
+          </Button>
+
+          {/* ✅ PROFILE DROPDOWN (diambil dari code yang kamu mau) */}
+          <div className="relative ml-3" ref={profileRef}>
+            <button
+              className="rounded-full border border-accent/40 bg-white/10 p-1 flex items-center justify-center hover:ring-2 hover:ring-accent transition"
+              onClick={() => setProfileOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={profileOpen}
+            >
+              <img
+                src="https://api.dicebear.com/7.x/lorelei/svg?seed=guest"
+                width={32}
+                height={32}
+                alt="Profile"
+                className="rounded-full"
+              />
+            </button>
+
+            {profileOpen && (
+              <div className="absolute right-0 mt-2 min-w-[160px] rounded-xl border border-accent/40 bg-white text-black shadow-md p-2 flex flex-col">
+                <Link
+                  href="/profile"
+                  className="rounded-md px-3 py-2 hover:bg-accent/10"
                 >
-                  <Link href="/profile" className="rounded-md px-3 py-2 hover:bg-accent/10 transition-colors">Profile</Link>
-                  <button className="rounded-md px-3 py-2 text-left hover:bg-accent/10 transition-colors">Logout</button>
-                </div>
-              )}
-            </div>
+                  Profile
+                </Link>
+                <button className="rounded-md px-3 py-2 text-left hover:bg-accent/10">
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </nav>
-        {/* Mobile nav: hamburger + dropdown */}
+
+        {/* Mobile nav: hamburger + dropdown (punya kamu, tetap) */}
         <div className="lg:hidden">
           <button
             type="button"
@@ -159,15 +202,60 @@ export function NavBar() {
               <span className="block h-[2px] w-5 bg-black" />
             </div>
           </button>
+
           {mobileOpen && (
             <div className="absolute right-4 left-4 top-16 z-50 rounded-xl border border-black/10 bg-white shadow-lg p-2">
-              <a href="#hero" className="block rounded-md px-3 py-2 hover:bg-black/5">Home</a>
-              <a href="/discussion" className="block rounded-md px-3 py-2 hover:bg-black/5">Discussion</a>
-              <a href="/digest" className="block rounded-md px-3 py-2 hover:bg-black/5">Daily Digest</a>
-              <a href="/tools/budget-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Budget Tracker</a>
-              <a href="/tools/savings-tracker" className="block rounded-md px-3 py-2 hover:bg-black/5">Goals and Loans</a>
-              <a href="#analysis" className="block rounded-md px-3 py-2 hover:bg-black/5">AI Analysis</a>
-              <a href="/news" className="block rounded-md px-3 py-2 hover:bg-black/5">News</a>
+              <a
+                href="#hero"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                Home
+              </a>
+              <a
+                href="/discussion"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                Discussion
+              </a>
+              <a
+                href="/digest"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                Daily Digest
+              </a>
+              <a
+                href="/tools/budget-tracker"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                Budget Tracker
+              </a>
+              <a
+                href="/tools/savings-tracker"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                Goals and Loans
+              </a>
+              <a
+                href="#analysis"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                AI Analysis
+              </a>
+              <a
+                href="/news"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                News
+              </a>
+
+              {/* (opsional) profile link di mobile, biar konsisten */}
+              <a
+                href="/profile"
+                className="block rounded-md px-3 py-2 hover:bg-black/5"
+              >
+                Profile
+              </a>
+
               <div className="mt-2 border-t border-black/10" />
               <Link
                 href="/signup"
