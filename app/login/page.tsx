@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+// import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -75,11 +75,11 @@ export default function Login() {
 
         <div className="flex gap-4">
           <button className="border py-2 flex-1 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition">
-            <Image src="/google.png" alt="Google" width={20} height={20} />
+            <img src="/google.png" alt="Google" width={20} height={20} />
             Google
           </button>
           <button className="border py-2 flex-1 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition">
-            <Image src="/apple.png" alt="Apple" width={20} height={20} />
+            <img src="/apple.png" alt="Apple" width={20} height={20} />
             Apple
           </button>
         </div>
@@ -108,7 +108,7 @@ export default function Login() {
         <div className="relative animate-bounce-slow">
 
           {/* Main Device Image */}
-          <Image
+          <img
             src="/Devices.png"
             alt="Devices"
             width={520}
@@ -117,7 +117,7 @@ export default function Login() {
           />
 
           {/* Big Coin */}
-          <Image
+          <img
             src="/coin.png"
             alt="coin"
             width={110}
@@ -126,7 +126,7 @@ export default function Login() {
           />
 
           {/* Small Coin */}
-          <Image
+          <img
             src="/coin.png"
             alt="coin"
             width={65}
