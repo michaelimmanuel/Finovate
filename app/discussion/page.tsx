@@ -41,7 +41,7 @@ export default function DiscussionPage() {
 
   const randomCategory = () =>
     ["Investing", "Budgeting", "Economy", "Financial Tips", "Crypto"][
-      Math.floor(Math.random() * 5)
+    Math.floor(Math.random() * 5)
     ];
 
   const randomFinancePost = () => ({
@@ -74,9 +74,8 @@ export default function DiscussionPage() {
       isLiked: false,
       id: 100 + i,
       title: `Crypto Post #${i + 1}`,
-      content: `This is crypto discussion post #${
-        i + 1
-      }. What are your thoughts on the latest trends?`,
+      content: `This is crypto discussion post #${i + 1
+        }. What are your thoughts on the latest trends?`,
       author: ["alice", "bob", "carol", "dan"][i % 4],
       likes: 10 + ((i * 3) % 17),
       dislikes: Math.floor(Math.random() * 5),
@@ -191,11 +190,11 @@ export default function DiscussionPage() {
       [activeCategory]: prev[activeCategory].map((p) =>
         p.id === postId
           ? {
-              ...p,
-              comments: p.comments.map((c) =>
-                c.id === commentId ? { ...c, likes: c.likes + 1 } : c
-              ),
-            }
+            ...p,
+            comments: p.comments.map((c) =>
+              c.id === commentId ? { ...c, likes: c.likes + 1 } : c
+            ),
+          }
           : p
       ),
     }));
@@ -203,11 +202,11 @@ export default function DiscussionPage() {
     setOpenPost((prev) =>
       prev && prev.id === postId
         ? {
-            ...prev,
-            comments: prev.comments.map((c) =>
-              c.id === commentId ? { ...c, likes: c.likes + 1 } : c
-            ),
-          }
+          ...prev,
+          comments: prev.comments.map((c) =>
+            c.id === commentId ? { ...c, likes: c.likes + 1 } : c
+          ),
+        }
         : prev
     );
   }
@@ -286,11 +285,10 @@ export default function DiscussionPage() {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full border text-sm transition ${
-                activeCategory === cat
+              className={`px-4 py-2 rounded-full border text-sm transition ${activeCategory === cat
                   ? "bg-black text-white"
                   : "bg-white hover:bg-muted/30"
-              }`}
+                }`}
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </button>
@@ -419,9 +417,10 @@ export default function DiscussionPage() {
       {/* Post Detail Modal */}
       <Modal open={!!openPost} onClose={() => setOpenPost(null)}>
         {openPost && (
-          // ✅ FIX RESPONSIVE MODAL:
-          <div className="bg-white rounded-lg shadow w-[95vw] max-w-7xl mx-auto p-4 md:p-6">
-            <div className="flex flex-col lg:flex-row gap-6 max-h-[80vh] overflow-y-auto">
+          // ✅ wrapper utama yg nge-scroll (biar sidebar gak kepotong)
+          <div className="mt-20 bg-white rounded-lg shadow w-[95vw] max-w-7xl mx-auto p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+            {/* ✅ flex container jangan dikasih max-h lagi */}
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* LEFT: main post content */}
               <div className="flex-1 min-w-0">
                 <h2 className="font-bold text-xl mb-3">{openPost.title}</h2>

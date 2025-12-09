@@ -32,7 +32,7 @@ export function Hero() {
             className="font-heading text-4xl sm:text-5xl md:text-7xl tracking-tight"
             {...fadeUp}
           >
-            Make the markets make sense
+            Innovate Your Finance and Technology
           </motion.h1>
 
           <motion.p
