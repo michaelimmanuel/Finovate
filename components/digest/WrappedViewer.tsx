@@ -20,47 +20,47 @@ const slides: Slide[] = [
     id: "intro",
     kicker: "50‑second daily digest",
     title: "Today in under a minute",
-    body: "Swipe or tap → to start.",
+    body: "Get a snapshot of today's markets, crypto, top movers, and one big idea in just 50 seconds.",
     theme: "bg-gradient-to-br from-[#FFE7A3] via-[#F6F1E7] to-white",
     textClass: "text-black",
   },
   {
     id: "markets",
     kicker: "Markets",
-    title: "What moved and why",
-    body: "Futures mixed; yields steady; dollar soft ahead of data.",
+    title: "Stocks and indexes today",
+    body: "S&P 500 up 0.5%; Dow steady; Nasdaq leads tech gains. Volatility remains moderate across global markets.",
     theme: "bg-gradient-to-br from-[#FFF3C4] via-[#FFDFA3] to-[#FFE7A3]",
     textClass: "text-black",
   },
   {
     id: "movers",
     kicker: "Top movers",
-    title: "Leaders and laggards",
-    body: "AAPL edges up on services strength; NVDA cools after a record run.",
+    title: "Winners & losers",
+    body: "AAPL rises on strong service revenue; NVDA dips after recent record highs; energy stocks rebound slightly.",
     theme: "bg-gradient-to-br from-[#FCE7F3] via-[#E9D5FF] to-white",
     textClass: "text-black",
   },
   {
     id: "crypto",
     kicker: "Crypto",
-    title: "BTC holds the line",
-    body: "ETF inflows stabilize; miners selling cools; ETH tracks broader risk.",
+    title: "BTC and ETH today",
+    body: "BTC holds key support around $35k; ETF inflows stabilize the market. ETH tracks broader risk trends.",
     theme: "bg-gradient-to-br from-[#D1FAE5] via-[#A7F3D0] to-white",
     textClass: "text-black",
   },
   {
     id: "macro",
     kicker: "Macro",
-    title: "Cooling signals, eyes on labor",
-    body: "ISM eases on prices; jobs data later this week in focus.",
+    title: "Economic signals",
+    body: "ISM eases; labor market data expected later this week. Inflation indicators show mixed signals.",
     theme: "bg-gradient-to-br from-[#DBEAFE] via-[#BFDBFE] to-white",
     textClass: "text-black",
   },
   {
     id: "idea",
     kicker: "One big idea",
-    title: "Cash margins drive upgrades",
-    body: "Cost discipline sets up 2026 EPS upside across quality names.",
+    title: "Focus for investors",
+    body: "Cost discipline and cash margins drive 2026 EPS upgrades across quality companies—key sectors to watch: tech and energy.",
     theme: "bg-gradient-to-br from-[#FFF7ED] via-[#FFEDD5] to-white",
     textClass: "text-black",
   },
@@ -94,7 +94,7 @@ export function WrappedViewer() {
   }, [index, playing])
 
   useEffect(() => {
-    setKey((k) => k + 1) // retrigger segment animation on slide change
+    setKey((k) => k + 1)
     if (playing) {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
       timeoutRef.current = window.setTimeout(playNext, msPerSlide)

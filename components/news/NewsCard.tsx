@@ -1,19 +1,28 @@
-import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Image from "next/image";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export type NewsCardProps = {
-  title: string
-  summary: string
-  date: string
-  tag?: string
-  href: string
-  imageSrc?: string
-  imageAlt?: string
-  compact?: boolean
-  sponsoredBrand?: string
-}
+  title: string;
+  summary: string;
+  date: string;
+  tag?: string;
+  href: string;
+  imageSrc?: string;
+  imageAlt?: string;
+  compact?: boolean;
+  sponsoredBrand?: string;
+};
 
-export function NewsCard({ title, summary, date, tag, imageSrc, imageAlt, compact, sponsoredBrand }: NewsCardProps) {
+export function NewsCard({
+  title,
+  summary,
+  date,
+  tag,
+  imageSrc,
+  imageAlt,
+  compact,
+  sponsoredBrand,
+}: NewsCardProps) {
   return (
     <Card
       className={
@@ -25,7 +34,12 @@ export function NewsCard({ title, summary, date, tag, imageSrc, imageAlt, compac
       tabIndex={0}
     >
       {imageSrc && (
-        <div className={"relative w-full overflow-hidden " + (compact ? "aspect-[4/3]" : "aspect-[16/9]") }>
+        <div
+          className={
+            "relative w-full overflow-hidden " +
+            (compact ? "aspect-[4/3]" : "aspect-[16/9]")
+          }
+        >
           <Image
             src={imageSrc}
             alt={imageAlt || title}
@@ -34,11 +48,20 @@ export function NewsCard({ title, summary, date, tag, imageSrc, imageAlt, compac
             className="object-cover transition-transform duration-500 ease-out hover:scale-[1.05] hover:brightness-[1.07]"
             priority={false}
           />
-          {/* Hover overlay gradient */}
+
+          {sponsoredBrand && !compact && (
+            <div className="absolute top-4 left-4 bg-emerald-50/90 text-emerald-700 text-[10px] font-medium px-2 py-1 rounded-md border border-emerald-100">
+              Sponsored by {sponsoredBrand}
+            </div>
+          )}
+
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100" />
         </div>
       )}
-      <CardHeader className={(compact ? "py-2" : "") + (imageSrc ? " pt-4" : "") }>
+
+      <CardHeader
+        className={(compact ? "py-2" : "") + (imageSrc ? " pt-4" : "")}
+      >
         <CardTitle
           className={
             (compact
@@ -49,7 +72,14 @@ export function NewsCard({ title, summary, date, tag, imageSrc, imageAlt, compac
         >
           <span className={compact ? "line-clamp-2" : undefined}>{title}</span>
           {tag && (
-            <span className={"ml-3 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide opacity-70 " + (compact ? "" : "")}>{tag}</span>
+            <span
+              className={
+                "ml-3 rounded-full border px-2 py-0.5 text-[14px] uppercase tracking-wide opacity-70 " +
+                (compact ? "" : "")
+              }
+            >
+              {tag}
+            </span>
           )}
         </CardTitle>
       </CardHeader>
@@ -62,12 +92,14 @@ export function NewsCard({ title, summary, date, tag, imageSrc, imageAlt, compac
         >
           {summary}
         </p>
-        <div className={compact ? "mt-2 text-[10px] opacity-50" : "mt-4 text-xs opacity-60"}>{date}</div>
-        {sponsoredBrand && (
-          <div className={"mt-2 text-[10px] tracking-wide uppercase " + (compact ? "opacity-60" : "opacity-50")}
-               aria-label={`Sponsored by ${sponsoredBrand}`}>Sponsored by {sponsoredBrand}</div>
-        )}
+        <div
+          className={
+            compact ? "mt-2 text-[10px] opacity-50" : "mt-4 text-xs opacity-60"
+          }
+        >
+          {date}
+        </div>
       </CardContent>
     </Card>
-  )
+  );
 }
