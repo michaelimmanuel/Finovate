@@ -336,7 +336,11 @@ function parseLoanCommand(text: string) {
   };
 }
 
-export default function ChatbotBox() {
+export default function ChatbotBox({
+  onLimitReached,
+}: {
+  onLimitReached?: () => void;
+}) {
   const router = useRouter();
   const { addExpense, addIncome, setActiveTab } = useBudget();
   const { addGoal, addLoan } = useGoalsLoans();

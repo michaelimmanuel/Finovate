@@ -105,7 +105,7 @@ export default function ToolsLayout({ children }) {
             )}
             onClick={() => setOpen((p) => !p)}
           >
-            Chat
+            💬 AI Chat
           </button>
         </div>
       </GoalsLoansProvider>
