@@ -11,7 +11,7 @@ const samples = [
 export function AIAnalysis() {
   return (
     <section id="analysis" className="bg-white text-black">
-      <div className="mx-auto max-w-7xl px-6 py-20">
+      <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="mb-4 text-xs tracking-wide uppercase opacity-70">AI analysis</div>
         <div className="mb-6 flex flex-wrap gap-2 text-sm opacity-80">
           <span className="rounded-full border px-3 py-1">AAPL</span>

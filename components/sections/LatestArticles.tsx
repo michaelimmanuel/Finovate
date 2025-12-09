@@ -22,7 +22,7 @@ const sortedNews = allNews.sort(
 export function LatestArticles() {
   return (
     <section id="articles" className="bg-white text-black">
-      <div className="mx-auto max-w-7xl px-6 py-20">
+      <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="mb-6 text-xs tracking-wide uppercase opacity-70">
           Latest articles
         </div>

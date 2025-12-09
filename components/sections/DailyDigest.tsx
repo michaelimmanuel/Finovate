@@ -22,8 +22,8 @@ export function DailyDigest() {
   }, [open])
 
   return (
-    <section id="digest" className="bg-white text-black">
-      <div className="mx-auto max-w-7xl px-6 py-20">
+    <section id="digest" className="-mt-14 bg-white text-black">
+      <div className="mx-auto max-w-7xl px-6 pb-10">
         {/* Kicker: compact timestamp */}
         <div className="mb-3 flex items-center gap-3 text-xs opacity-70">
           <span className="inline-block rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-[11px] font-semibold tracking-wide uppercase text-black">Daily digest</span>
