@@ -23,7 +23,7 @@ const financeTexts = [
 
 export default function PeopleDetailPage() {
   const { username } = useParams(); // ← FIX
-  const decoded = decodeURIComponent(username);
+  const decoded = decodeURIComponent(username as string);
   // ← Aman
 
   const [followed, setFollowed] = useState(false);
