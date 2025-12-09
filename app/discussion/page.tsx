@@ -100,7 +100,6 @@ export default function DiscussionPage() {
       category: "macro",
     })),
 
-    // NOTE: key with space must be quoted
     "personal finance": Array.from({ length: 8 }, (_, i) => ({
       isLiked: false,
       id: 400 + i,
@@ -248,15 +247,16 @@ export default function DiscussionPage() {
   return (
     <main className="flex flex-col lg:flex-row gap-6 w-full max-w-7xl mx-auto px-4 py-8">
       {/* LEFT SIDEBAR */}
-      <aside className="w-full lg:w-60 sticky top-6 h-fit mb-6 lg:mb-0">
+      <aside className="w-full lg:w-60 lg:sticky lg:top-6 h-fit mb-2 lg:mb-0">
         <h3 className="font-bold mb-4 text-lg">RECOMMENDED PEOPLE</h3>
 
-        <div className="flex flex-col gap-3 mb-10">
+        {/* ✅ mobile jadi horizontal scroll biar ga makan tempat */}
+        <div className="flex lg:flex-col gap-3 mb-6 overflow-x-auto lg:overflow-visible pb-2">
           {recommendedUsers.map((u) => (
             <Link
               key={u.name}
               href={`/people/${encodeURIComponent(u.name)}`}
-              className="flex items-center gap-2 cursor-pointer hover:opacity-60"
+              className="flex items-center gap-2 cursor-pointer hover:opacity-60 flex-shrink-0"
             >
               <div className="w-5 h-5 rounded-full bg-gray-300" />
               <span className="text-sm">{u.name}</span>
@@ -265,10 +265,13 @@ export default function DiscussionPage() {
           ))}
         </div>
 
-        <h3 className="font-bold mb-3 text-lg">TYPE</h3>
-        <div className="flex flex-col gap-2">
+        <h3 className="font-bold mb-2 text-lg">TYPE</h3>
+        <div className="flex lg:flex-col gap-2 flex-wrap">
           {typeList.map((t) => (
-            <div key={t} className="text-sm">
+            <div
+              key={t}
+              className="text-sm px-3 py-1 rounded-full bg-muted/40 w-fit"
+            >
               {t}
             </div>
           ))}
@@ -277,13 +280,16 @@ export default function DiscussionPage() {
 
       {/* MIDDLE CONTENT */}
       <section className="flex-1 flex flex-col gap-6">
-        <div className="flex gap-2 mb-4 flex-wrap">
+        {/* categories */}
+        <div className="flex gap-2 flex-wrap">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full border text-sm ${
-                activeCategory === cat ? "bg-black text-white" : "bg-white"
+              className={`px-4 py-2 rounded-full border text-sm transition ${
+                activeCategory === cat
+                  ? "bg-black text-white"
+                  : "bg-white hover:bg-muted/30"
               }`}
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -291,11 +297,13 @@ export default function DiscussionPage() {
           ))}
         </div>
 
-        <div className="mb-4 flex justify-end">
+        {/* new post */}
+        <div className="flex justify-end">
           <Button onClick={() => setShowPostModal(true)}>New Post</Button>
         </div>
 
-        <div className="flex flex-col gap-8">
+        {/* list posts */}
+        <div className="flex flex-col gap-6">
           {postsByCategory[activeCategory]?.length === 0 && (
             <div className="text-center text-muted-foreground">
               No posts yet in this category.
@@ -313,7 +321,7 @@ export default function DiscussionPage() {
                   post.author
                 )}`}
                 alt={post.author}
-                className="w-12 h-12 rounded-full object-cover border flex-shrink-0 mt-1"
+                className="w-11 h-11 md:w-12 md:h-12 rounded-full object-cover border flex-shrink-0 mt-1"
               />
 
               <div className="flex-1 flex flex-col">
@@ -321,7 +329,7 @@ export default function DiscussionPage() {
                   <img
                     src={post.image}
                     alt="Post visual"
-                    className="w-full h-48 object-cover rounded mb-3"
+                    className="w-full h-44 md:h-48 object-cover rounded mb-3"
                   />
                 )}
 
@@ -370,9 +378,8 @@ export default function DiscussionPage() {
         </div>
       </section>
 
-      {/* RIGHT: Post Modal (contains right-sidebar inside modal) */}
+      {/* Create Post Modal */}
       <Modal open={showPostModal} onClose={() => setShowPostModal(false)}>
-        {/* Create Post modal */}
         <form
           onSubmit={handleAddPost}
           className="bg-white rounded-lg shadow p-6 flex flex-col gap-4 w-full max-w-lg mx-auto"
@@ -409,196 +416,205 @@ export default function DiscussionPage() {
         </form>
       </Modal>
 
+      {/* Post Detail Modal */}
       <Modal open={!!openPost} onClose={() => setOpenPost(null)}>
         {openPost && (
-          <div className="mt-96 bg-white rounded-lg shadow p-6 w-full max-w-7xl mx-auto flex gap-6">
-            {/* LEFT: main post content */}
-            <div className="flex-1">
-              <h2 className="font-bold text-xl mb-3">{openPost.title}</h2>
+          // ✅ FIX RESPONSIVE MODAL:
+          <div className="bg-white rounded-lg shadow w-[95vw] max-w-7xl mx-auto p-4 md:p-6">
+            <div className="flex flex-col lg:flex-row gap-6 max-h-[80vh] overflow-y-auto">
+              {/* LEFT: main post content */}
+              <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-xl mb-3">{openPost.title}</h2>
 
-              {openPost.image && (
-                <img src={openPost.image} className="w-full rounded-md mb-4" />
-              )}
+                {openPost.image && (
+                  <img
+                    src={openPost.image}
+                    className="w-full rounded-md mb-4 max-h-[320px] object-cover"
+                  />
+                )}
 
-              <p className="text-sm mb-6">{openPost.content}</p>
+                <p className="text-sm mb-6 whitespace-pre-line">
+                  {openPost.content}
+                </p>
 
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-xs text-muted-foreground">
-                  {openPost.comments.length} comment
-                  {openPost.comments.length !== 1 ? "s" : ""}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    by {openPost.author}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleLike(openPost.id)}
-                    aria-label="Like post"
-                  >
-                    <Heart
-                      className="w-5 h-5 text-red-500"
-                      fill={openPost.isLiked ? "red" : "none"}
-                    />
-                  </Button>
-                  <span className="font-bold text-lg">{openPost.likes}</span>
-                </div>
-              </div>
-
-              <h3 className="font-semibold mb-2">Comments</h3>
-
-              <div className="flex flex-col gap-3 mb-4">
-                {openPost.comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="bg-gray-100 p-3 rounded flex gap-3 items-start"
-                  >
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <div className="text-xs text-muted-foreground">
+                    {openPost.comments.length} comment
+                    {openPost.comments.length !== 1 ? "s" : ""}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      by {openPost.author}
+                    </span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleCommentLike(openPost.id, comment.id)}
-                      aria-label="Like comment"
+                      onClick={() => handleLike(openPost.id)}
+                      aria-label="Like post"
                     >
-                      <Heart className="w-4 h-4 text-red-500" fill="none" />
+                      <Heart
+                        className="w-5 h-5 text-red-500"
+                        fill={openPost.isLiked ? "red" : "none"}
+                      />
                     </Button>
-                    <div>
-                      <span className="text-xs text-gray-600">
-                        {comment.author}
-                      </span>
-                      <p className="text-sm">{comment.content}</p>
-                    </div>
-                    <div className="ml-auto text-xs text-muted-foreground">
-                      {comment.likes} 👍
-                    </div>
-                  </div>
-                ))}
-                {openPost.comments.length === 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    No comments yet.
-                  </div>
-                )}
-              </div>
-
-              <form
-                className="flex gap-2 mt-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddComment(openPost.id);
-                }}
-              >
-                <textarea
-                  className="border rounded px-3 py-2 flex-1 resize-none min-h-[40px]"
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={1}
-                  required
-                />
-                <Button type="submit" disabled={!newComment.trim()}>
-                  Comment
-                </Button>
-              </form>
-            </div>
-
-            {/* RIGHT: sidebar inside modal */}
-            <aside className="w-80 flex-shrink-0">
-              {/* AUTHOR CARD */}
-              <div className="p-4 bg-white rounded shadow mb-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <img
-                    src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(
-                      openPost.author
-                    )}`}
-                    className="w-10 h-10 rounded-full border"
-                  />
-                  <div>
-                    <h4 className="font-semibold">{openPost.author}</h4>
-                    <Button
-                      size="sm"
-                      className="mt-1"
-                      onClick={() =>
-                        setFollowed((prev) => ({
-                          ...prev,
-                          [openPost.author]: !prev[openPost.author],
-                        }))
-                      }
-                    >
-                      {followed?.[openPost.author] ? "Followed" : "Follow"}
-                    </Button>
+                    <span className="font-bold text-lg">{openPost.likes}</span>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600">{randomBioFinance()}</p>
-              </div>
+                <h3 className="font-semibold mb-2">Comments</h3>
 
-              {/* OTHER THREAD */}
-              <div className="p-4 bg-white rounded shadow mb-6">
-                <h4 className="font-bold mb-3 text-sm">
-                  OTHER THREAD THEY WROTE
-                </h4>
-
-                {Array.from({ length: 3 }).map((_, i) => {
-                  const p = randomFinancePost();
-                  return (
-                    <div key={i} className="mb-4">
-                      <p className="font-medium text-sm">{p.title}</p>
-
-                      <div className="flex items-center text-xs mt-1 justify-between">
-                        <div className="flex gap-3">
-                          <span>👍 {p.likes}</span>
-                          <span>💬 {p.comments}</span>
-                        </div>
-
-                        <span className="px-2 py-1 bg-gray-200 rounded text-xs">
-                          {p.category}
+                <div className="flex flex-col gap-3 mb-4">
+                  {openPost.comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="bg-gray-100 p-3 rounded flex gap-3 items-start"
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleCommentLike(openPost.id, comment.id)}
+                        aria-label="Like comment"
+                      >
+                        <Heart className="w-4 h-4 text-red-500" fill="none" />
+                      </Button>
+                      <div className="min-w-0">
+                        <span className="text-xs text-gray-600">
+                          {comment.author}
                         </span>
+                        <p className="text-sm break-words">{comment.content}</p>
+                      </div>
+                      <div className="ml-auto text-xs text-muted-foreground">
+                        {comment.likes} 👍
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
+                  {openPost.comments.length === 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      No comments yet.
+                    </div>
+                  )}
+                </div>
+
+                <form
+                  className="flex flex-col sm:flex-row gap-2 mt-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleAddComment(openPost.id);
+                  }}
+                >
+                  <textarea
+                    className="border rounded px-3 py-2 flex-1 resize-none min-h-[40px]"
+                    placeholder="Add a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    rows={1}
+                    required
+                  />
+                  <Button type="submit" disabled={!newComment.trim()}>
+                    Comment
+                  </Button>
+                </form>
               </div>
 
-              {/* RECOMMENDED POSTS */}
-              <div className="p-4 bg-white rounded shadow">
-                <h4 className="font-bold mb-3 text-sm">RECOMMENDED POSTS</h4>
+              {/* RIGHT: sidebar inside modal */}
+              <aside className="w-full lg:w-80 flex-shrink-0 space-y-6">
+                {/* AUTHOR CARD */}
+                <div className="p-4 bg-white rounded shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <img
+                      src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(
+                        openPost.author
+                      )}`}
+                      className="w-10 h-10 rounded-full border"
+                    />
+                    <div>
+                      <h4 className="font-semibold">{openPost.author}</h4>
+                      <Button
+                        size="sm"
+                        className="mt-1"
+                        onClick={() =>
+                          setFollowed((prev) => ({
+                            ...prev,
+                            [openPost.author]: !prev[openPost.author],
+                          }))
+                        }
+                      >
+                        {followed?.[openPost.author] ? "Followed" : "Follow"}
+                      </Button>
+                    </div>
+                  </div>
 
-                {Array.from({ length: 4 }).map((_, i) => {
-                  const r = randomFinancePost();
-                  const author = [
-                    "Liam",
-                    "Chloe",
-                    "Nathan",
-                    "Sophia",
-                    "Evelyn",
-                  ][Math.floor(Math.random() * 5)];
+                  <p className="text-sm text-gray-600">{randomBioFinance()}</p>
+                </div>
 
-                  return (
-                    <div key={i} className="mb-3 flex gap-3">
-                      <img
-                        src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${author}`}
-                        className="w-9 h-9 rounded-full border"
-                      />
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">{author}</p>
-                        <p className="text-sm">{r.title}</p>
+                {/* OTHER THREAD */}
+                <div className="p-4 bg-white rounded shadow">
+                  <h4 className="font-bold mb-3 text-sm">
+                    OTHER THREAD THEY WROTE
+                  </h4>
 
-                        <div className="text-xs mt-1 flex justify-between">
+                  {Array.from({ length: 3 }).map((_, i) => {
+                    const p = randomFinancePost();
+                    return (
+                      <div key={i} className="mb-4">
+                        <p className="font-medium text-sm">{p.title}</p>
+
+                        <div className="flex items-center text-xs mt-1 justify-between">
                           <div className="flex gap-3">
-                            <span>👍 {r.likes}</span>
-                            <span>💬 {r.comments}</span>
+                            <span>👍 {p.likes}</span>
+                            <span>💬 {p.comments}</span>
                           </div>
 
-                          <span className="px-2 py-1 bg-orange-200 rounded text-xs">
-                            {r.category}
+                          <span className="px-2 py-1 bg-gray-200 rounded text-xs">
+                            {p.category}
                           </span>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </aside>
+                    );
+                  })}
+                </div>
+
+                {/* RECOMMENDED POSTS */}
+                <div className="p-4 bg-white rounded shadow">
+                  <h4 className="font-bold mb-3 text-sm">RECOMMENDED POSTS</h4>
+
+                  {Array.from({ length: 4 }).map((_, i) => {
+                    const r = randomFinancePost();
+                    const author = [
+                      "Liam",
+                      "Chloe",
+                      "Nathan",
+                      "Sophia",
+                      "Evelyn",
+                    ][Math.floor(Math.random() * 5)];
+
+                    return (
+                      <div key={i} className="mb-3 flex gap-3">
+                        <img
+                          src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${author}`}
+                          className="w-9 h-9 rounded-full border"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm">{author}</p>
+                          <p className="text-sm line-clamp-2">{r.title}</p>
+
+                          <div className="text-xs mt-1 flex justify-between">
+                            <div className="flex gap-3">
+                              <span>👍 {r.likes}</span>
+                              <span>💬 {r.comments}</span>
+                            </div>
+
+                            <span className="px-2 py-1 bg-orange-200 rounded text-xs">
+                              {r.category}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </aside>
+            </div>
           </div>
         )}
       </Modal>
