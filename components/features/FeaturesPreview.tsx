@@ -17,7 +17,7 @@ const featureSlides = [
     subtitle: "Rencana tabungan jadi jelas & terukur.",
     text:
       "Bikin goal, atur target date atau kontribusi per bulan, dan track progress sampai tercapai.",
-    image: "/features/saving-goals.png",
+    image: "/features/goals.png",
     badge: "Core Feature",
   },
   {
@@ -25,7 +25,7 @@ const featureSlides = [
     subtitle: "Catat pengeluaran & pemasukan otomatis.",
     text:
       "Input harian, kategori otomatis dari deskripsi, dan lihat ringkasannya langsung.",
-    image: "/features/budget-tracking.png",
+    image: "/features/budget.png",
     badge: "Core Feature",
   },
   {
@@ -41,7 +41,7 @@ const featureSlides = [
     subtitle: "Input finance pakai bahasa biasa.",
     text:
       "Cukup ketik: 'Cicilan HP 12jt DP 2jt bunga 0% 12 bulan' dan sistem otomatis catat + hitung.",
-    image: "/features/chatbot-ai.png",
+    image: "/features/ai.png",
     badge: "AI",
   },
   {
@@ -49,7 +49,7 @@ const featureSlides = [
     subtitle: "Ringkasan market cepat & gampang.",
     text:
       "AI rangkum kondisi market hari ini dalam 1 menit biar kamu tetap update tanpa ribet.",
-    image: "/features/todays-market.png",
+    image: "/features/daily.png",
     badge: "AI",
   },
   {
@@ -57,7 +57,7 @@ const featureSlides = [
     subtitle: "Diskusi & belajar bareng komunitas.",
     text:
       "Tanya jawab, sharing strategi, dan dapet insight dari user lain.",
-    image: "/features/community.png",
+    image: "/features/dis.png",
     badge: "Community",
   },
 ];

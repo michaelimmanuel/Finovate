@@ -50,7 +50,7 @@ export default function FeaturesOnboardingModal() {
       {/* modal box */}
       <div
         className={cn(
-          "relative z-10 w-[92%] max-w-3xl rounded-2xl bg-white shadow-2xl border border-muted",
+          "relative z-10 w-[92%] max-w-6xl rounded-2xl bg-white shadow-2xl border border-muted",
           "max-h-[85vh] overflow-y-auto"
         )}
       >
