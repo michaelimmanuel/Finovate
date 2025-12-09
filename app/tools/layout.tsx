@@ -66,7 +66,7 @@ export default function ToolsLayout({ children }: { children: ReactNode }) {
             </div>
 
             {/* fixed height biar ga makin tinggi */}
-            <div className="h-[380px]">
+            <div className="h-[580px]">
               <ChatbotBox />
             </div>
           </div>

@@ -5,10 +5,13 @@ import { LatestArticles } from "@/components/sections/LatestArticles"
 import { FinalCTA } from "@/components/sections/FinalCTA"
 import { Footer } from "@/components/sections/Footer"
 import { ScrollProgress } from "@/components/ScrollProgress"
+import FeaturesOnboardingModal from "@/components/modals/Preview" 
+
 
 export default function Home() {
   return (
     <main className="bg-white text-black">
+      <FeaturesOnboardingModal />
       <ScrollProgress />
       <Hero />
       <DailyDigest />
