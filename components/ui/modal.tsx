@@ -32,7 +32,7 @@ export function Modal({ open, onClose, children}: {
           transition={{ type: "spring", stiffness: 300, damping: 30, duration: 0.35 }}
         >
           <div
-            className="bg-white w-full h-full max-w-none max-h-none rounded-none shadow-2xl relative flex flex-col overflow-auto"
+            className="w-full h-full max-w-none max-h-none rounded-none shadow-2xl relative flex flex-col overflow-auto"
             onClick={e => e.stopPropagation()}
             data-slot="modal"
           >

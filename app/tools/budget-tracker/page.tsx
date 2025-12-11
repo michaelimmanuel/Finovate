@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Area,
   AreaChart,
+  Area,
   CartesianGrid,
   XAxis,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  ReferenceLine,
 } from "recharts";
 import {
   Card,
@@ -16,22 +19,27 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useBudget } from "@/components/budget/BudgetProvider";
+import { Button } from "@/components/ui/button";
+import {
+  useGoalsLoans,
+  GoalEntry,
+  LoanEntry,
+  GoalSavingEntry,
+} from "@/components/finance/GoalsLoansProvider";
+import { useRouter } from "next/navigation";
 
-type TabKey = "overview" | "input";
+type TabKey = "goals" | "loans";
 
-const categories = [
-  "Food & Drink",
-  "Transport",
-  "Shopping",
-  "Bills",
-  "Entertainment",
-  "Other",
-];
+type Loan = Record<string, any>;
+
+// ✅ helper biar aman dari NaN / Infinity
+function isFiniteNumber(x: any): x is number {
+  return typeof x === "number" && Number.isFinite(x);
+}
 
 function formatIDR(n: number) {
+  if (!isFiniteNumber(n)) return "Rp0";
   return n.toLocaleString("id-ID", {
     style: "currency",
     currency: "IDR",
@@ -39,776 +47,1287 @@ function formatIDR(n: number) {
   });
 }
 
-function buildAIInsight({
-  monthlyIncome,
-  monthlyExpenses,
-  remaining,
-  chartData,
-}: {
-  monthlyIncome: number;
-  monthlyExpenses: number;
-  remaining: number;
-  chartData: { date: string; income: number; expenses: number }[];
-}) {
-  const expenseRatio =
-    monthlyIncome > 0 ? monthlyExpenses / monthlyIncome : 0;
+function monthsBetween(from: Date, to: Date) {
+  const diff =
+    (to.getFullYear() - from.getFullYear()) * 12 +
+    (to.getMonth() - from.getMonth());
+  return diff;
+}
+function addMonths(d: Date, m: number) {
+  const x = new Date(d);
+  x.setMonth(x.getMonth() + m);
+  return x;
+}
 
-  const last7 = chartData.slice(-7);
-  const prev7 = chartData.slice(-14, -7);
+// ==== base monthly payment (standard amort)
+function calcMonthlyPayment(
+  principal: number,
+  annualRatePct: number,
+  tenorMonths: number
+) {
+  const r = annualRatePct / 100 / 12;
+  if (r === 0) return principal / tenorMonths;
+  return (principal * r) / (1 - Math.pow(1 + r, -tenorMonths));
+}
 
-  const sum = (arr: typeof last7) =>
-    arr.reduce((s, d) => s + d.expenses, 0);
+// ==== floating hybrid model (sama seperti sebelumnya)
+function getRateForMonth(loan: LoanEntry, monthIndex: number) {
+  if (loan.scheme === "fixed") return loan.annualRate;
 
-  const last7Expenses = sum(last7);
-  const prev7Expenses = sum(prev7);
+  const fixedYears = loan.fixedYears ?? 3;
+  const floatStepPct = loan.floatStepPct ?? 0.5;
+  const floatStepYears = loan.floatStepYears ?? 2;
+  const floatCapPct = loan.floatCapPct ?? 3;
 
-  const trendUp =
-    prev7.length > 0 && last7Expenses > prev7Expenses * 1.1;
-  const trendDown =
-    prev7.length > 0 && last7Expenses < prev7Expenses * 0.9;
+  const fixedMonths = fixedYears * 12;
+  if (monthIndex < fixedMonths) return loan.annualRate;
 
-  let headline = "AI Analysis";
+  const floatMonth = monthIndex - fixedMonths;
+  const stepMonths = floatStepYears * 12;
+  const stepCount = Math.floor(floatMonth / stepMonths);
+
+  const totalUp = Math.min(floatCapPct, stepCount * floatStepPct);
+  return loan.annualRate + totalUp;
+}
+
+function buildAmortization(loan: LoanEntry) {
+  const extra = loan.extraPaymentMonthly || 0;
+
+  let bal = loan.principal;
+  let month = 0;
+  let totalInterest = 0;
+
+  const rows: {
+    m: number;
+    rate: number;
+    interest: number;
+    principalPaid: number;
+    balance: number;
+  }[] = [];
+
+  while (bal > 0 && month < loan.tenorMonths + 1200) {
+    const rateNow = getRateForMonth(loan, month);
+    const basePayNow = calcMonthlyPayment(
+      bal,
+      rateNow,
+      Math.max(1, loan.tenorMonths - month)
+    );
+    const pay = basePayNow + extra;
+
+    const r = rateNow / 100 / 12;
+    const interest = bal * r;
+    let principalPaid = pay - interest;
+    if (principalPaid < 0) principalPaid = 0;
+    if (principalPaid > bal) principalPaid = bal;
+
+    bal -= principalPaid;
+    totalInterest += interest;
+
+    rows.push({
+      m: month + 1,
+      rate: rateNow,
+      interest,
+      principalPaid,
+      balance: bal,
+    });
+
+    month++;
+  }
+
+  const firstPay = rows.length ? rows[0].interest + rows[0].principalPaid : 0;
+  return {
+    basePayFirstMonth: firstPay,
+    totalInterest,
+    monthsToFinish: rows.length,
+    rows,
+  };
+}
+
+/* ---------------------------
+   NEW: AI / Forecast helpers
+   --------------------------- */
+
+// Forecast a single goal balance month-by-month for `months` months.
+// Uses goal.monthlyContribution if present; else assumes zero contribution.
+function forecastGoalBalances(goal: GoalEntry, months = 6) {
+  const result: { monthIndex: number; balance: number }[] = [];
+  let bal = isFiniteNumber(goal.currentBalance) ? goal.currentBalance : 0;
+  const contrib = isFiniteNumber(goal.monthlyContribution)
+    ? goal.monthlyContribution!
+    : 0;
+
+  for (let i = 1; i <= months; i++) {
+    bal += contrib;
+    result.push({ monthIndex: i, balance: Math.max(0, bal) });
+  }
+
+  return result;
+}
+
+// Enhanced goals AI analysis: checks feasibility vs monthlyIncome (if provided).
+function analyzeGoalsAI(goals: GoalEntry[], monthlyIncome?: number) {
+  if (goals.length === 0) {
+    return {
+      headline: "AI Analysis",
+      text: "Belum ada goals. Tambah goal dulu supaya sistem bisa hitung plan kamu.",
+    };
+  }
+
+  // aggregate required monthly across all goals with targetDate or monthlyContribution
+  const now = new Date();
+  let totalRequiredPerMonth = 0;
+  let msgs: string[] = [];
+
+  goals.forEach((g) => {
+    const t = g.targetAmount;
+    const c = g.currentBalance;
+    if (!isFiniteNumber(t) || !isFiniteNumber(c)) {
+      msgs.push(`Goal "${g.name}" datanya belum valid (target/saldo).`);
+      return;
+    }
+    const remaining = Math.max(0, t - c);
+
+    // if targetDate provided → calc per-month needed
+    if (g.targetDate) {
+      const td = new Date(g.targetDate);
+      if (!Number.isNaN(td.getTime()) && td > now) {
+        const monthsLeftRaw = monthsBetween(now, td);
+        const monthsLeft = isFiniteNumber(monthsLeftRaw)
+          ? Math.max(1, monthsLeftRaw)
+          : 1;
+        const needPerMonth = remaining / monthsLeft;
+        totalRequiredPerMonth += needPerMonth;
+        msgs.push(
+          `Goal "${g.name}" butuh ~${formatIDR(
+            Math.ceil(needPerMonth)
+          )}/bulan untuk tercapai sebelum ${g.targetDate}.`
+        );
+        return;
+      }
+    }
+
+    // else if monthlyContribution present → estimate months to finish
+    if (isFiniteNumber(g.monthlyContribution) && g.monthlyContribution! > 0) {
+      const needPerMonth = g.monthlyContribution!;
+      totalRequiredPerMonth += needPerMonth;
+      const monthsNeed = Math.ceil(remaining / needPerMonth);
+      msgs.push(
+        `Goal "${
+          g.name
+        }" estimasi selesai di ${monthsNeed} bulan dengan kontribusi ${formatIDR(
+          needPerMonth
+        )}/bulan.`
+      );
+      return;
+    }
+
+    msgs.push(
+      `Goal "${g.name}" belum punya target date atau kontribusi. Sistem butuh input tambahan.`
+    );
+  });
+
+  // build headline/text
+  let headline = "AI Analysis — Goals";
   let text = "";
 
-  if (monthlyIncome === 0) {
-    text =
-      "You haven't added any income this month. Add income entries to get more accurate insights.";
-  } else if (expenseRatio < 0.5) {
-    text =
-      "Great job! Your expenses are well controlled and below 50% of your income. You have strong room to save or invest.";
-  } else if (expenseRatio < 0.8) {
-    text =
-      "Your spending is healthy and still within a safe range. Keep tracking daily expenses to maintain consistency.";
+  if (!isFiniteNumber(monthlyIncome) || monthlyIncome === 0) {
+    text +=
+      "Kami belum punya data penghasilan bulanan (monthly income). Tambahkan income di budget tracker supaya analisis feasibility lebih akurat. ";
   } else {
-    text =
-      "Your expenses are quite high relative to income. Consider setting a daily cap or reviewing recurring bills.";
+    // compute ratio of required savings vs income
+    const ratio = totalRequiredPerMonth / monthlyIncome;
+    if (ratio === 0) {
+      text += "Goal-mu tampaknya belum menuntut kontribusi bulanan tambahan. ";
+    } else if (ratio < 0.15) {
+      text += `Bagus! Total kebutuhan menabung untuk semua goals adalah ${formatIDR(
+        Math.round(totalRequiredPerMonth)
+      )}/bulan (~${Math.round(
+        ratio * 100
+      )}% dari penghasilan). Kamu punya ruang besar untuk investasi. `;
+    } else if (ratio < 0.35) {
+      text += `Kebutuhan menabung sekitar ${formatIDR(
+        Math.round(totalRequiredPerMonth)
+      )}/bulan (~${Math.round(
+        ratio * 100
+      )}% dari penghasilan). Masih wajar, pertimbangkan memprioritaskan goal yang paling penting. `;
+    } else {
+      text += `Total kebutuhan menabung cukup tinggi: ${formatIDR(
+        Math.round(totalRequiredPerMonth)
+      )}/bulan (~${Math.round(
+        ratio * 100
+      )}% dari penghasilan). Ini bisa membebani cashflow — pertimbangkan perpanjang target date, turunkan target, atau kurangi alokasi untuk goal berprioritas rendah. `;
+    }
   }
 
-  if (trendUp) {
-    text +=
-      " In the last 7 days, spending has increased noticeably. Watch for impulse purchases this week.";
-  } else if (trendDown) {
-    text +=
-      " Nice! Spending in the last 7 days is trending down compared to the previous week.";
-  } else if (prev7.length > 0) {
-    text +=
-      " Spending trend in the last week is stable — good consistency.";
-  }
+  // add per-goal bullets
+  text += " " + msgs.join(" ");
 
-  if (remaining < 0) {
-    text +=
-      " You're currently overspending this month. Try cutting 1–2 non-essential categories.";
-  } else {
-    const saveTarget = Math.round(monthlyIncome * 0.2);
-    text += ` Suggested monthly saving target: ${formatIDR(saveTarget)}.`;
-  }
+  // suggestions
+  text +=
+    " Rekomendasi: 1) Tetapkan prioritas (high/medium/low). 2) Kalau pendapatan tidak cukup, pilih 1–2 goal prioritas untuk dipercepat dan pindahkan sisanya ke horizon lebih panjang. 3) Pertimbangkan autopilot transfer bulanan untuk goal prioritas.";
 
   return { headline, text };
 }
 
-function getMonthKey(dateStr: string) {
-  return dateStr.slice(0, 7);
+// Loan: given a loan, produce refinancing scenarios (reduce annual rate by deltas array)
+// returns [ {rate, monthly, totalInterest, monthsToFinish} ... ]
+function simulateRefinance(loan: LoanEntry, rateDeltaPct: number) {
+  // clone loan but with lower annualRate: loan.annualRate + rateDeltaPct (delta negative reduces)
+  const newRate = loan.annualRate + rateDeltaPct;
+  const simulatedLoan: LoanEntry = {
+    ...loan,
+    annualRate: newRate,
+  };
+  const amort = buildAmortization(simulatedLoan);
+  // approximate monthly payment as basePayFirstMonth (first payment)
+  const monthly = amort.basePayFirstMonth;
+  return {
+    rate: newRate,
+    monthly,
+    totalInterest: amort.totalInterest,
+    monthsToFinish: amort.monthsToFinish,
+  };
 }
 
-export default function BudgetTrackerPage() {
-  const {
-    incomeEntries,
-    expenseEntries,
-    addIncome,
-    addExpense,
-    updateExpense,
-    deleteExpense,
-  } = useBudget();
+function analyzeLoansSmart(loans: LoanEntry[], monthlyIncome?: number) {
+  if (loans.length === 0) {
+    return { headline: "AI Analysis — Loans", text: "Belum ada data loan." };
+  }
 
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const suggestions: string[] = [];
+  loans.forEach((l) => {
+    const amort = buildAmortization(l);
+    const currentMonthly = amort.basePayFirstMonth;
+    const totalInterest = amort.totalInterest;
+    suggestions.push(
+      `${l.name}: estimasi cicilan bulan pertama ${formatIDR(
+        Math.round(currentMonthly)
+      )}, total bunga ${formatIDR(Math.round(totalInterest))}.`
+    );
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const currentMonthKey = getMonthKey(todayStr);
+    // refinancing scenarios: -1% and -2%
+    const s1 = simulateRefinance(l, -1);
+    const s2 = simulateRefinance(l, -2);
 
-  // ====== INPUT FORMS
-  const [incomeForm, setIncomeForm] = useState({
-    date: todayStr,
-    amount: "",
-  });
+    const save1 = Math.max(0, totalInterest - s1.totalInterest);
+    const save2 = Math.max(0, totalInterest - s2.totalInterest);
 
-  const [expenseForm, setExpenseForm] = useState({
-    date: todayStr,
-    description: "",
-    category: categories[0],
-    amount: "",
-  });
+    suggestions.push(
+      `Refinance opsi: -1% → cicilan ${formatIDR(
+        Math.round(s1.monthly)
+      )}/bln, hemat bunga ${formatIDR(Math.round(save1))}.`
+    );
+    suggestions.push(
+      `Refinance opsi: -2% → cicilan ${formatIDR(
+        Math.round(s2.monthly)
+      )}/bln, hemat bunga ${formatIDR(Math.round(save2))}.`
+    );
 
-  // ====== EDIT STATE
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    date: "",
-    description: "",
-    category: categories[0],
-    amount: "",
-  });
-
-  // ====== FILTER DATA BULAN INI
-  const incomesThisMonth = useMemo(
-    () => incomeEntries.filter((i) => getMonthKey(i.date) === currentMonthKey),
-    [incomeEntries, currentMonthKey]
-  );
-
-  const expensesThisMonth = useMemo(
-    () => expenseEntries.filter((e) => getMonthKey(e.date) === currentMonthKey),
-    [expenseEntries, currentMonthKey]
-  );
-
-  // ====== TOTALS
-  const monthlyIncome = useMemo(
-    () => incomesThisMonth.reduce((sum, i) => sum + i.amount, 0),
-    [incomesThisMonth]
-  );
-
-  const monthlyExpenses = useMemo(
-    () => expensesThisMonth.reduce((sum, e) => sum + e.amount, 0),
-    [expensesThisMonth]
-  );
-
-  const remaining = monthlyIncome - monthlyExpenses;
-
-  // ====== CHART DATA (agregasi per hari)
-  const chartData = useMemo(() => {
-    const dayMap = new Map<
-      string,
-      { label: string; income: number; expenses: number }
-    >();
-
-    function ensureDay(dateStr: string) {
-      if (!dayMap.has(dateStr)) {
-        const d = new Date(dateStr);
-        const label = d.toLocaleDateString("id-ID", {
-          day: "2-digit",
-          month: "short",
-        });
-        dayMap.set(dateStr, { label, income: 0, expenses: 0 });
+    // cashflow note
+    if (isFiniteNumber(monthlyIncome) && monthlyIncome > 0) {
+      const ratio = currentMonthly / monthlyIncome;
+      if (ratio > 0.4) {
+        suggestions.push(
+          `Catatan: cicilan ${l.name} mengambil >40% penghasilan bulanan — risiko cashflow tinggi. Pertimbangkan refinancing atau perpanjang tenor.`
+        );
       }
     }
+  });
 
-    incomesThisMonth.forEach((i) => {
-      ensureDay(i.date);
-      dayMap.get(i.date)!.income += i.amount;
-    });
+  const headline = "AI Analysis — Loans";
+  const text =
+    suggestions.join(" ") +
+    " Rekomendasi umum: cek biaya penalti refinancing, bandingkan tenor, dan pikirkan trade-off antara pengurangan bunga vs. biaya administrasi.";
 
-    expensesThisMonth.forEach((e) => {
-      ensureDay(e.date);
-      dayMap.get(e.date)!.expenses += e.amount;
-    });
+  return { headline, text };
+}
 
-    return [...dayMap.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, v]) => ({ date, ...v }));
-  }, [incomesThisMonth, expensesThisMonth]);
+/* ---------------------------
+   End new helpers
+   --------------------------- */
 
-  // ====== MONTHLY CHART DATA (last 3 months)
-  const monthlyChartData = useMemo(() => {
-    const monthMap = new Map<
-      string,
-      { month: string; income: number; expenses: number }
-    >();
-
-    incomeEntries.forEach((i) => {
-      const m = getMonthKey(i.date);
-      if (!monthMap.has(m))
-        monthMap.set(m, { month: m, income: 0, expenses: 0 });
-      monthMap.get(m)!.income += i.amount;
-    });
-
-    expenseEntries.forEach((e) => {
-      const m = getMonthKey(e.date);
-      if (!monthMap.has(m))
-        monthMap.set(m, { month: m, income: 0, expenses: 0 });
-      monthMap.get(m)!.expenses += e.amount;
-    });
-
-    return [...monthMap.values()]
-      .sort((a, b) => a.month.localeCompare(b.month))
-      .slice(-3)
-      .map((x) => ({
-        ...x,
-        monthLabel: new Date(x.month + "-01").toLocaleDateString("id-ID", {
-          month: "short",
-          year: "numeric",
-        }),
-      }));
-  }, [incomeEntries, expenseEntries]);
-
-  // ====== ACTIONS (pakai provider)
-  function onAddIncome(e: React.FormEvent) {
-    e.preventDefault();
-    if (!incomeForm.date || !incomeForm.amount) return;
-
-    addIncome({
-      date: incomeForm.date,
-      amount: Number(incomeForm.amount),
-    });
-
-    setIncomeForm({ date: todayStr, amount: "" });
-    setActiveTab("overview");
+// ==== Goals analysis (legacy but kept for compatibility)
+function analyzeGoals(goals: GoalEntry[]) {
+  if (goals.length === 0) {
+    return "Belum ada goals. Tambah goal dulu supaya sistem bisa hitung plan kamu.";
   }
 
-  function onAddExpense(e: React.FormEvent) {
+  const today = new Date();
+  const insights: string[] = [];
+
+  goals.forEach((g) => {
+    // ✅ validasi angka dulu
+    const t = g.targetAmount;
+    const c = g.currentBalance;
+    const mc = g.monthlyContribution;
+
+    if (!isFiniteNumber(t) || !isFiniteNumber(c)) {
+      insights.push(
+        `Goal "${g.name}" datanya belum valid (target/saldo). Coba edit ulang goal ini.`
+      );
+      return;
+    }
+
+    const remaining = t - c;
+
+    if (!isFiniteNumber(remaining)) {
+      insights.push(
+        `Goal "${g.name}" datanya belum valid (remaining NaN). Coba edit ulang goal ini.`
+      );
+      return;
+    }
+
+    if (remaining <= 0) {
+      insights.push(`Goal "${g.name}" sudah tercapai.`);
+      return;
+    }
+
+    if (g.targetDate) {
+      const td = new Date(g.targetDate);
+
+      // ✅ handle invalid targetDate
+      if (Number.isNaN(td.getTime())) {
+        insights.push(`Goal "${g.name}" punya target date yang tidak valid.`);
+        return;
+      }
+
+      const monthsLeftRaw = monthsBetween(today, td);
+      const monthsLeft = isFiniteNumber(monthsLeftRaw)
+        ? Math.max(1, monthsLeftRaw)
+        : 1;
+
+      const needPerMonth = Math.ceil(remaining / monthsLeft);
+
+      insights.push(
+        `Goal "${g.name}" butuh sekitar ${formatIDR(
+          needPerMonth
+        )}/bulan supaya tercapai sebelum ${g.targetDate}.`
+      );
+      return;
+    }
+
+    if (isFiniteNumber(mc) && mc > 0) {
+      const monthsNeedRaw = remaining / mc;
+
+      // ✅ kalau hasilnya invalid, jangan lanjut
+      if (!isFiniteNumber(monthsNeedRaw)) {
+        insights.push(
+          `Goal "${g.name}" belum bisa dihitung karena kontribusi/remaining invalid.`
+        );
+        return;
+      }
+
+      const monthsNeed = Math.ceil(monthsNeedRaw);
+      const eta = addMonths(today, monthsNeed);
+
+      // ✅ handle invalid eta
+      if (Number.isNaN(eta.getTime())) {
+        insights.push(
+          `Goal "${g.name}" belum bisa dihitung ETA-nya (date invalid).`
+        );
+        return;
+      }
+
+      insights.push(
+        `Goal "${g.name}" dengan kontribusi ${formatIDR(
+          mc
+        )}/bulan estimasi selesai di ${eta.toISOString().slice(0, 7)}.`
+      );
+      return;
+    }
+
+    insights.push(
+      `Goal "${g.name}" belum punya target date atau kontribusi bulanan.`
+    );
+  });
+
+  return insights.join(" ");
+}
+
+export default function SavingsTrackerPage() {
+  const router = useRouter();
+  const {
+    goals,
+    loans,
+    savings,
+    addGoal,
+    addLoan,
+    addSavingToGoal,
+    deleteSaving,
+    // optional: provider may supply monthlyIncome for better AI
+    // @ts-ignore - provider might not have this, safe optional
+    monthlyIncome,
+  } = useGoalsLoans() as any;
+
+  const [activeTab, setActiveTab] = useState<TabKey>("goals");
+
+  useEffect(() => {
+    function syncFromHash() {
+      const h = window.location.hash.replace("#", "");
+      if (h === "loans") setActiveTab("loans");
+      if (h === "goals") setActiveTab("goals");
+    }
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, []);
+
+  function goTab(tab: TabKey) {
+    setActiveTab(tab);
+    router.replace(`/tools/savings-tracker#${tab}`);
+  }
+
+  const [goalForm, setGoalForm] = useState({
+    name: "",
+    targetAmount: "",
+    targetDate: "",
+    monthlyContribution: "",
+    currentBalance: "0",
+    priority: "medium" as GoalEntry["priority"],
+  });
+
+  const [loanForm, setLoanForm] = useState({
+    name: "",
+    assetPrice: "",
+    downPayment: "",
+    principal: "",
+    annualRate: "",
+    tenorMonths: "",
+    startDate: new Date().toISOString().slice(0, 10),
+    scheme: "fixed" as LoanEntry["scheme"],
+    fixedYears: "3",
+    floatStepPct: "0.5",
+    floatStepYears: "2",
+    floatCapPct: "3",
+    extraPaymentMonthly: "0",
+  });
+
+  const [savingDraft, setSavingDraft] = useState<Record<string, string>>({});
+  const [savingNoteDraft, setSavingNoteDraft] = useState<
+    Record<string, string>
+  >({});
+
+  function submitGoal(e: React.FormEvent) {
     e.preventDefault();
-    if (!expenseForm.date || !expenseForm.description || !expenseForm.amount)
+    if (!goalForm.name || !goalForm.targetAmount) return;
+
+    addGoal({
+      name: goalForm.name,
+      targetAmount: Number(goalForm.targetAmount),
+      targetDate: goalForm.targetDate || undefined,
+      monthlyContribution: goalForm.monthlyContribution
+        ? Number(goalForm.monthlyContribution)
+        : undefined,
+      currentBalance: Number(goalForm.currentBalance || 0),
+      priority: goalForm.priority,
+    });
+
+    setGoalForm({
+      name: "",
+      targetAmount: "",
+      targetDate: "",
+      monthlyContribution: "",
+      currentBalance: "0",
+      priority: "medium",
+    });
+
+    goTab("goals");
+  }
+
+  function submitLoan(e: React.FormEvent) {
+    e.preventDefault();
+    if (
+      !loanForm.name ||
+      !loanForm.annualRate ||
+      !loanForm.tenorMonths ||
+      (!loanForm.principal && !loanForm.assetPrice)
+    )
       return;
 
-    addExpense({
-      date: expenseForm.date,
-      description: expenseForm.description,
-      category: expenseForm.category,
-      amount: Number(expenseForm.amount),
+    const assetPriceNum = loanForm.assetPrice
+      ? Number(loanForm.assetPrice)
+      : undefined;
+    const dpNum = loanForm.downPayment ? Number(loanForm.downPayment) : 0;
+
+    const principalNum = assetPriceNum
+      ? Math.max(0, assetPriceNum - dpNum)
+      : Number(loanForm.principal);
+
+    addLoan({
+      name: loanForm.name,
+      assetPrice: assetPriceNum,
+      downPayment: dpNum,
+      principal: principalNum,
+      annualRate: Number(loanForm.annualRate),
+      tenorMonths: Number(loanForm.tenorMonths),
+      startDate: loanForm.startDate,
+      scheme: loanForm.scheme,
+      fixedYears:
+        loanForm.scheme === "floating"
+          ? Number(loanForm.fixedYears || 3)
+          : undefined,
+      floatStepPct:
+        loanForm.scheme === "floating"
+          ? Number(loanForm.floatStepPct || 0.5)
+          : undefined,
+      floatStepYears:
+        loanForm.scheme === "floating"
+          ? Number(loanForm.floatStepYears || 2)
+          : undefined,
+      floatCapPct:
+        loanForm.scheme === "floating"
+          ? Number(loanForm.floatCapPct || 3)
+          : undefined,
+      extraPaymentMonthly: Number(loanForm.extraPaymentMonthly || 0),
     });
 
-    setExpenseForm({
-      date: todayStr,
-      description: "",
-      category: categories[0],
-      amount: "",
+    setLoanForm({
+      name: "",
+      assetPrice: "",
+      downPayment: "",
+      principal: "",
+      annualRate: "",
+      tenorMonths: "",
+      startDate: new Date().toISOString().slice(0, 10),
+      scheme: "fixed",
+      fixedYears: "3",
+      floatStepPct: "0.5",
+      floatStepYears: "2",
+      floatCapPct: "3",
+      extraPaymentMonthly: "0",
     });
-    setActiveTab("overview");
+
+    goTab("loans");
   }
 
-  function startEdit(ex: any) {
-    setEditingId(ex.id);
-    setEditForm({
-      date: ex.date,
-      description: ex.description,
-      category: ex.category,
-      amount: String(ex.amount),
+  const goalsChartData = useMemo(() => {
+    return goals.map((g: any) => ({
+      name: g.name,
+      saved: isFiniteNumber(g.currentBalance) ? g.currentBalance : 0,
+      remaining:
+        isFiniteNumber(g.targetAmount) && isFiniteNumber(g.currentBalance)
+          ? Math.max(0, g.targetAmount - g.currentBalance)
+          : 0,
+    }));
+  }, [goals]);
+
+  // legacy short text (kept for backward comp)
+  const goalsAIText = analyzeGoals(goals);
+
+  // NEW: enhanced AI analyses
+  const goalsAI = analyzeGoalsAI(goals, monthlyIncome);
+  const loansAI = analyzeLoansSmart(loans, monthlyIncome);
+
+  const savingsByGoal = useMemo(() => {
+    const m = new Map<string, GoalSavingEntry[]>();
+    savings.forEach((s: any) => {
+      if (!m.has(s.goalId)) m.set(s.goalId, []);
+      m.get(s.goalId)!.push(s);
     });
-  }
+    return m;
+  }, [savings]);
 
-  function saveEdit(id: string) {
-    updateExpense(id, {
-      date: editForm.date,
-      description: editForm.description,
-      category: editForm.category,
-      amount: Number(editForm.amount),
-    });
-    setEditingId(null);
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-  }
-
-  function handleDelete(id: string) {
-    deleteExpense(id);
-  }
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
+      {showDisclaimer && (
+        <div className="w-full bg-red-100 text-red-700 px-4 py-3 rounded-xl flex justify-between items-start border border-red-200">
+          <div className="text-sm leading-relaxed">
+            ⚠️ <span className="font-medium">Disclaimer: </span>
+            Analisis AI bisa tidak 100% akurat. Harap verifikasi kembali sebelum
+            mengambil keputusan finansial.
+          </div>
+
+          <button
+            onClick={() => setShowDisclaimer(false)}
+            className="ml-4 text-red-500 hover:text-red-700 hover:cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Budget Tracker</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Goals & Loans</h1>
         <p className="text-muted-foreground">
-          Data kamu update realtime. Tambah expenses/income → chart langsung berubah.
+          Saving plan and Installments/Loans.
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2">
         <TabButton
-          active={activeTab === "overview"}
-          onClick={() => setActiveTab("overview")}
+          active={activeTab === "goals"}
+          onClick={() => goTab("goals")}
         >
-          Budget Overview
+          Saving Goals
         </TabButton>
         <TabButton
-          active={activeTab === "input"}
-          onClick={() => setActiveTab("input")}
+          active={activeTab === "loans"}
+          onClick={() => goTab("loans")}
         >
-          Input Budget
+          Installments / Loans
         </TabButton>
       </div>
 
-      {activeTab === "overview" ? (
+      {activeTab === "goals" && (
         <>
-          {/* Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {goals.length === 0 ? (
             <Card className="rounded-2xl">
-              <CardHeader>
-                <CardDescription>Monthly Income</CardDescription>
-                <CardTitle className="text-lg">
-                  {formatIDR(monthlyIncome)}
-                </CardTitle>
-              </CardHeader>
+              <CardContent className="py-10 text-center text-muted-foreground">
+                Belum ada goals. Tambahin dulu lewat form atau chatbot 👍
+              </CardContent>
             </Card>
+          ) : (
+            <>
+              {/* Overview Chart */}
+              <Card className="rounded-2xl">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Goals Overview</CardTitle>
+                  <CardDescription>Target vs saved</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[33vh] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={goalsChartData}
+                      margin={{ left: 12, right: 12 }}
+                    >
+                      <CartesianGrid
+                        vertical={false}
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                      />
+                      <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        fontSize={12}
+                      />
+                      <Tooltip formatter={(v: any) => formatIDR(Number(v))} />
+                      <Bar
+                        dataKey="saved"
+                        fill="#22c55e"
+                        radius={[8, 8, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="remaining"
+                        fill="#ef4444"
+                        radius={[8, 8, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardDescription>Total Expenses</CardDescription>
-                <CardTitle className="text-lg">
-                  {formatIDR(monthlyExpenses)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardDescription>Remaining</CardDescription>
-                <CardTitle
-                  className={`text-lg ${remaining < 0 ? "text-destructive" : "text-primary"
-                    }`}
-                >
-                  {formatIDR(remaining)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
-          {/* Daily Chart */}
-          <Card className="rounded-2xl">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Spending Trend</CardTitle>
-              <CardDescription>
-                Income vs Expenses per day (bulan ini)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[33vh] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ left: 12, right: 12 }}>
-                  <defs>
-                    <linearGradient id="fillExpenses" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.7} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="fillIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.7} />
-                      <stop offset="95%" stopColor="#fbbf24" stopOpacity={0.1} />
-                    </linearGradient>
-                  </defs>
-
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="label"
-                    interval={0}
-                    padding={{ left: 10, right: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    fontSize={12}
-                  />
-                  <Tooltip
-                    contentStyle={{ background: "white", border: "1px solid #fbbf24", borderRadius: 8, fontSize: 13 }}
-                    labelFormatter={(label) => `Tanggal: ${label}`}
-                    formatter={(value: any) => formatIDR(Number(value))}
-                  />
-
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    stroke="#fbbf24"
-                    fill="url(#fillIncome)"
-                    fillOpacity={0.7}
-                    strokeWidth={3}
-                    dot={{ r: 3, stroke: "#fff", strokeWidth: 1 }}
-                    activeDot={{ r: 6, stroke: "#fbbf24", strokeWidth: 2, fill: "#fff" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    stroke="#ef4444"
-                    fill="url(#fillExpenses)"
-                    fillOpacity={0.7}
-                    strokeWidth={3}
-                    dot={{ r: 3, stroke: "#fff", strokeWidth: 1 }}
-                    activeDot={{ r: 6, stroke: "#ef4444", strokeWidth: 2, fill: "#fff" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* AI Analysis Card */}
-          {(() => {
-            const ai = buildAIInsight({
-              monthlyIncome,
-              monthlyExpenses,
-              remaining,
-              chartData,
-            });
-            return (
+              {/* NEW: Enhanced AI analysis for Goals */}
               <Card className="rounded-2xl">
                 <CardContent className="py-6 flex items-start gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
                     🤖
                   </div>
                   <div>
-                    <div className="font-semibold mb-1">{ai.headline}</div>
+                    <div className="font-semibold mb-1">{goalsAI.headline}</div>
                     <div className="text-sm text-muted-foreground leading-relaxed">
-                      {ai.text}
+                      {goalsAI.text}
+                    </div>
+                    {/* quick CTA */}
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      Tip: tambahkan `monthly income` di profil budget tracker
+                      agar analisis lebih akurat.
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            );
-          })()}
 
-          {/* Expense History */}
+              {/* Goals List + Add Saving */}
+              <Card className="rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">Goals List</CardTitle>
+                  <CardDescription>
+                    Input saving harian/bulanan di tiap goal
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  {goals.map((g: any) => {
+                    const remaining =
+                      isFiniteNumber(g.targetAmount) &&
+                      isFiniteNumber(g.currentBalance)
+                        ? g.targetAmount - g.currentBalance
+                        : 0;
+
+                    const pct =
+                      isFiniteNumber(g.targetAmount) && g.targetAmount > 0
+                        ? Math.min(
+                            100,
+                            Math.round(
+                              (g.currentBalance / g.targetAmount) * 100
+                            )
+                          )
+                        : 0;
+
+                    const savesList = savingsByGoal.get(g.id) || [];
+
+                    // forecast next 6 months
+                    const forecast6 = forecastGoalBalances(g, 6);
+
+                    return (
+                      <div
+                        key={g.id}
+                        className="rounded-xl border border-muted p-3 space-y-3"
+                      >
+                        {/* header */}
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">{g.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {g.priority}
+                          </div>
+                        </div>
+
+                        {/* progress */}
+                        <div className="text-sm">
+                          {formatIDR(g.currentBalance)} /{" "}
+                          {formatIDR(g.targetAmount)} ({pct}%)
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Remaining: {formatIDR(Math.max(0, remaining))}
+                        </div>
+
+                        {/* small forecast row */}
+                        <div className="text-xs text-muted-foreground">
+                          Forecast (6 bln):{" "}
+                          {forecast6.map((f, i) => (
+                            <span key={i}>
+                              {i === 0 ? "" : " • "}
+                              M+{f.monthIndex}:{" "}
+                              {formatIDR(Math.round(f.balance))}
+                            </span>
+                          ))}{" "}
+                          <button
+                            className="ml-2 text-[11px] underline"
+                            onClick={() => {
+                              // placeholder: could open modal with longer forecast
+                              alert("Open detailed forecast (implement modal)");
+                            }}
+                          >
+                            lihat 12/24 bln
+                          </button>
+                        </div>
+
+                        {/* ✅ Add Saving row */}
+                        <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
+                          <Input
+                            type="number"
+                            placeholder="Tambah saving (IDR)"
+                            value={savingDraft[g.id] || ""}
+                            onChange={(e) =>
+                              setSavingDraft((p) => ({
+                                ...p,
+                                [g.id]: e.target.value,
+                              }))
+                            }
+                          />
+                          <Input
+                            placeholder="Catatan (opsional)"
+                            value={savingNoteDraft[g.id] || ""}
+                            onChange={(e) =>
+                              setSavingNoteDraft((p) => ({
+                                ...p,
+                                [g.id]: e.target.value,
+                              }))
+                            }
+                          />
+                          <Button
+                            type="button"
+                            className="rounded-full px-5"
+                            onClick={() => {
+                              const amt = Number(savingDraft[g.id] || 0);
+                              if (!amt) return;
+                              addSavingToGoal(
+                                g.id,
+                                amt,
+                                undefined,
+                                savingNoteDraft[g.id]
+                              );
+                              setSavingDraft((p) => ({ ...p, [g.id]: "" }));
+                              setSavingNoteDraft((p) => ({
+                                ...p,
+                                [g.id]: "",
+                              }));
+                            }}
+                          >
+                            + Add Saving
+                          </Button>
+                        </div>
+
+                        {/* ✅ Recent Savings */}
+                        {savesList.length > 0 && (
+                          <div className="pt-2 border-t border-muted">
+                            <div className="text-xs font-semibold mb-2">
+                              Recent savings
+                            </div>
+                            <div className="space-y-1">
+                              {savesList.slice(0, 5).map((s) => (
+                                <div
+                                  key={s.id}
+                                  className="flex items-center justify-between text-xs text-muted-foreground"
+                                >
+                                  <div>
+                                    {s.date} • {formatIDR(s.amount)}
+                                    {s.note ? ` • ${s.note}` : ""}
+                                  </div>
+                                  <button
+                                    className="text-red-500 hover:underline"
+                                    onClick={() => deleteSaving(s.id)}
+                                  >
+                                    remove
+                                  </button>
+                                </div>
+                              ))}
+                              {savesList.length > 5 && (
+                                <div className="text-[11px] text-muted-foreground">
+                                  +{savesList.length - 5} more…
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Add Goal Form */}
           <Card className="rounded-2xl">
             <CardHeader>
-              <CardTitle className="text-lg">Expense History</CardTitle>
-              <CardDescription>Latest entries first</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {expensesThisMonth.length === 0 && (
-                <div className="text-sm text-muted-foreground">
-                  No expenses yet. Add one from “Input Budget”.
-                </div>
-              )}
-
-              {expensesThisMonth.map((ex) => {
-                const isEditing = editingId === ex.id;
-
-                return (
-                  <div
-                    key={ex.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-muted p-3 bg-background"
-                  >
-                    {!isEditing ? (
-                      <div className="flex-1">
-                        <div className="font-medium">
-                          {ex.description}
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            • {ex.category}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {ex.date}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
-                        <Input
-                          type="date"
-                          value={editForm.date}
-                          onChange={(e) =>
-                            setEditForm((f) => ({ ...f, date: e.target.value }))
-                          }
-                        />
-                        <Input
-                          placeholder="Description"
-                          value={editForm.description}
-                          onChange={(e) =>
-                            setEditForm((f) => ({
-                              ...f,
-                              description: e.target.value,
-                            }))
-                          }
-                        />
-                        <select
-                          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={editForm.category}
-                          onChange={(e) =>
-                            setEditForm((f) => ({
-                              ...f,
-                              category: e.target.value,
-                            }))
-                          }
-                        >
-                          {categories.map((c) => (
-                            <option key={c}>{c}</option>
-                          ))}
-                        </select>
-                        <Input
-                          type="number"
-                          placeholder="Amount"
-                          value={editForm.amount}
-                          onChange={(e) =>
-                            setEditForm((f) => ({
-                              ...f,
-                              amount: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    )}
-
-                    {!isEditing ? (
-                      <div className="flex items-center gap-3">
-                        <div className="font-semibold">
-                          {formatIDR(ex.amount)}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEdit(ex)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(ex.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => saveEdit(ex.id)}>
-                          Save
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={cancelEdit}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Monthly Overview */}
-          <Card className="rounded-2xl">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Monthly Overview</CardTitle>
+              <CardTitle className="text-lg">Add New Goal</CardTitle>
               <CardDescription>
-                Income vs Expenses (last 3 months)
+                Isi salah satu: target date atau kontribusi/bulan.
               </CardDescription>
             </CardHeader>
+            <CardContent>
+              <form
+                onSubmit={submitGoal}
+                className="grid grid-cols-1 md:grid-cols-2 gap-3"
+              >
+                <Input
+                  placeholder="Goal name"
+                  value={goalForm.name}
+                  onChange={(e) =>
+                    setGoalForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Target amount (IDR)"
+                  value={goalForm.targetAmount}
+                  onChange={(e) =>
+                    setGoalForm((f) => ({
+                      ...f,
+                      targetAmount: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  type="date"
+                  placeholder="Target date"
+                  value={goalForm.targetDate}
+                  onChange={(e) =>
+                    setGoalForm((f) => ({ ...f, targetDate: e.target.value }))
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Monthly contribution (IDR)"
+                  value={goalForm.monthlyContribution}
+                  onChange={(e) =>
+                    setGoalForm((f) => ({
+                      ...f,
+                      monthlyContribution: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Current balance"
+                  value={goalForm.currentBalance}
+                  onChange={(e) =>
+                    setGoalForm((f) => ({
+                      ...f,
+                      currentBalance: e.target.value,
+                    }))
+                  }
+                />
+                <select
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={goalForm.priority}
+                  onChange={(e) =>
+                    setGoalForm((f) => ({
+                      ...f,
+                      priority: e.target.value as any,
+                    }))
+                  }
+                >
+                  <option value="high">High priority</option>
+                  <option value="medium">Medium priority</option>
+                  <option value="low">Low priority</option>
+                </select>
 
-            <CardContent className="h-[28vh] w-full pt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyChartData} margin={{ left: 12, right: 12 }}>
-                  <defs>
-                    <linearGradient id="fillExpM" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.7} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="fillIncM" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.7} />
-                      <stop offset="95%" stopColor="#fbbf24" stopOpacity={0.1} />
-                    </linearGradient>
-                  </defs>
-
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="monthLabel"
-                    interval={0}
-                    padding={{ left: 13, right: 13 }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    fontSize={12}
-                  />
-                  <Tooltip
-                    contentStyle={{ background: "white", border: "1px solid #fbbf24", borderRadius: 8, fontSize: 13 }}
-                    formatter={(value: any) => formatIDR(Number(value))}
-                  />
-
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    stroke="#fbbf24"
-                    fill="url(#fillIncM)"
-                    fillOpacity={0.7}
-                    strokeWidth={3}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    stroke="#ef4444"
-                    fill="url(#fillExpM)"
-                    fillOpacity={0.7}
-                    strokeWidth={3}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Detailed Budget Analysis & Recommendations */}
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-lg">
-                Detailed Budget Analysis & Recommendations
-              </CardTitle>
-              <CardDescription>
-                Insight based on your income and spending pattern
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-4 text-muted-foreground">
-              <ul className="list-disc pl-6 space-y-3 text-base">
-                <li>
-                  <span className="font-semibold text-primary">Income Growth:</span>{" "}
-                  Your income has shown a consistent upward trend this month. This positive growth provides an excellent
-                  opportunity to allocate more funds toward savings or investments.
-                </li>
-                <li>
-                  <span className="font-semibold text-primary">Expense Stability:</span>{" "}
-                  Your daily expenses remain stable, indicating good control over discretionary spending. However,
-                  review recurring expenses to identify any potential savings.
-                </li>
-                <li>
-                  <span className="font-semibold text-primary">Savings Rate:</span>{" "}
-                  Consider setting a target to save at least 20% of your monthly income. Automating transfers to a
-                  dedicated savings account can help you achieve this goal effortlessly.
-                </li>
-                <li>
-                  <span className="font-semibold text-primary">Emergency Fund:</span>{" "}
-                  If you haven't already, build an emergency fund covering 3–6 months of living expenses to provide
-                  security in case of unexpected events.
-                </li>
-                <li>
-                  <span className="font-semibold text-primary">Budget Review:</span>{" "}
-                  Regularly review your budget and adjust categories as your financial situation evolves.
-                </li>
-              </ul>
-
-              <div className="pt-2">
-                <div className="text-lg text-primary font-bold mb-2">
-                  Actionable Recommendations:
+                <div className="md:col-span-2">
+                  <Button type="submit" className="rounded-full px-8">
+                    Save Goal
+                  </Button>
                 </div>
-                <ol className="list-decimal pl-6 space-y-2 text-base">
-                  <li>Increase your monthly savings by 5–10% to take advantage of rising income.</li>
-                  <li>Audit subscriptions and recurring payments for possible reductions.</li>
-                  <li>Set a monthly spending cap for non-essential categories.</li>
-                  <li>Track your progress weekly to stay motivated.</li>
-                  <li>Explore investments suitable for your risk profile.</li>
-                </ol>
-              </div>
+              </form>
             </CardContent>
           </Card>
         </>
-      ) : (
+      )}
+
+      {/* ================== LOANS TAB ================== */}
+      {activeTab === "loans" && (
         <>
-          {/* INPUT TAB */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Income Form */}
+          {loans.length === 0 ? (
             <Card className="rounded-2xl">
-              <CardHeader>
-                <CardTitle className="text-lg">Input Daily Income</CardTitle>
-                <CardDescription>
-                  Kamu bisa input income kapan pun (mis. gajian, freelance, dll)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={onAddIncome} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">Date</label>
-                    <Input
-                      type="date"
-                      value={incomeForm.date}
-                      onChange={(e) =>
-                        setIncomeForm((f) => ({ ...f, date: e.target.value }))
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">
-                      Amount (IDR)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 500000"
-                      value={incomeForm.amount}
-                      onChange={(e) =>
-                        setIncomeForm((f) => ({ ...f, amount: e.target.value }))
-                      }
-                    />
-                  </div>
-
-                  <Button className="rounded-full px-8" type="submit">
-                    Save Income
-                  </Button>
-                </form>
+              <CardContent className="py-10 text-center text-muted-foreground">
+                Belum ada loan/cicilan. Tambahin dulu lewat form atau chatbot 👍
               </CardContent>
             </Card>
-
-            {/* Expense Form */}
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardTitle className="text-lg">Add New Expense</CardTitle>
-                <CardDescription>
-                  Satu hari bisa input berkali-kali, nanti kejumlah otomatis.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={onAddExpense} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">Date</label>
-                    <Input
-                      type="date"
-                      value={expenseForm.date}
-                      onChange={(e) =>
-                        setExpenseForm((f) => ({ ...f, date: e.target.value }))
-                      }
-                    />
+          ) : (
+            <>
+              {/* Global loans AI summary */}
+              <Card className="rounded-2xl">
+                <CardContent className="py-6 flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
+                    🏦
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">
-                      Description
-                    </label>
-                    <Input
-                      placeholder="e.g. Coffee, Lunch, Grab"
-                      value={expenseForm.description}
-                      onChange={(e) =>
-                        setExpenseForm((f) => ({
-                          ...f,
-                          description: e.target.value,
-                        }))
-                      }
-                    />
+                  <div>
+                    <div className="font-semibold mb-1">{loansAI.headline}</div>
+                    <div className="text-sm text-muted-foreground leading-relaxed">
+                      {loansAI.text}
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">
-                      Category
-                    </label>
-                    <select
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm w-full"
-                      value={expenseForm.category}
-                      onChange={(e) =>
-                        setExpenseForm((f) => ({
-                          ...f,
-                          category: e.target.value,
-                        }))
-                      }
-                    >
-                      {categories.map((c) => (
-                        <option key={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
+              {loans.map((l: Loan) => {
+                const amort = buildAmortization(l);
+                const maxMonths = Math.min(amort.rows.length, l.tenorMonths);
+                const chart = amort.rows.slice(0, maxMonths).map((r) => ({
+                  label: `M${r.m}`,
+                  m: r.m,
+                  interest: r.interest,
+                  principalPaid: r.principalPaid,
+                }));
 
-                  <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">
-                      Amount (IDR)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 25000"
-                      value={expenseForm.amount}
-                      onChange={(e) =>
-                        setExpenseForm((f) => ({
-                          ...f,
-                          amount: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
+                const remainingPrincipal = amort.rows.length
+                  ? amort.rows[amort.rows.length - 1].balance
+                  : l.principal;
 
-                  <Button className="rounded-full px-8" type="submit">
-                    Save Expense
+                const yearsLeft = (amort.monthsToFinish / 12).toFixed(1);
+                const fixedMonths =
+                  l.scheme === "floating" ? (l.fixedYears ?? 3) * 12 : null;
+
+                // simulate -1% and -2%
+                const s1 = simulateRefinance(l, -1);
+                const s2 = simulateRefinance(l, -2);
+                const save1 = Math.max(
+                  0,
+                  amort.totalInterest - s1.totalInterest
+                );
+                const save2 = Math.max(
+                  0,
+                  amort.totalInterest - s2.totalInterest
+                );
+
+                return (
+                  <Card key={l.id} className="rounded-2xl">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">{l.name}</CardTitle>
+                      <CardDescription>
+                        {l.scheme} • Start {l.startDate} • Tenor {l.tenorMonths}{" "}
+                        bulan
+                        {l.scheme === "floating" && fixedMonths
+                          ? ` • Fixed ${
+                              fixedMonths / 12
+                            } th → Floating mulai M${fixedMonths + 1}`
+                          : ""}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3">
+                      {(l.assetPrice || l.downPayment) && (
+                        <div className="text-sm text-muted-foreground">
+                          {l.assetPrice
+                            ? `Harga aset: ${formatIDR(l.assetPrice)}`
+                            : ""}
+                          {l.downPayment
+                            ? ` • DP: ${formatIDR(l.downPayment)}`
+                            : ""}
+                          {" • "}
+                          Pokok pinjaman: {formatIDR(l.principal)}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <MiniStat
+                          label="Cicilan bulan 1 (est.)"
+                          value={formatIDR(amort.basePayFirstMonth)}
+                        />
+                        <MiniStat
+                          label="Total bunga (est.)"
+                          value={formatIDR(amort.totalInterest)}
+                        />
+                        <MiniStat
+                          label="Sisa pokok"
+                          value={formatIDR(remainingPrincipal)}
+                        />
+                      </div>
+
+                      <div className="text-sm text-muted-foreground">
+                        Extra payment simulasi:{" "}
+                        {formatIDR(l.extraPaymentMonthly)}/bulan → estimasi
+                        lunas {yearsLeft} tahun.
+                      </div>
+
+                      <div className="h-[28vh] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={chart}
+                            margin={{ left: 12, right: 12 }}
+                          >
+                            <CartesianGrid
+                              vertical={false}
+                              strokeDasharray="3 3"
+                              stroke="#e5e7eb"
+                            />
+                            <XAxis
+                              dataKey="label"
+                              tickLine={false}
+                              axisLine={false}
+                              tickMargin={8}
+                              fontSize={12}
+                            />
+                            <Tooltip
+                              formatter={(v: any) => formatIDR(Number(v))}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="principalPaid"
+                              stroke="#22c55e"
+                              fill="#22c55e33"
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="interest"
+                              stroke="#ef4444"
+                              fill="#ef444433"
+                            />
+
+                            {l.scheme === "floating" && fixedMonths && (
+                              <ReferenceLine
+                                x={`M${fixedMonths}`}
+                                stroke="#0ea5e9"
+                                strokeDasharray="6 3"
+                                label={{
+                                  value: "Floating start",
+                                  position: "top",
+                                  fontSize: 11,
+                                }}
+                              />
+                            )}
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* NEW: refinancing suggestions */}
+                      <div className="pt-2 border-t border-muted space-y-2">
+                        <div className="text-sm font-semibold">
+                          Refinancing options
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          - Jika rate turun 1% → cicilan ~
+                          {formatIDR(Math.round(s1.monthly))}/bln, estimasi
+                          hemat bunga {formatIDR(Math.round(save1))}.
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          - Jika rate turun 2% → cicilan ~
+                          {formatIDR(Math.round(s2.monthly))}/bln, estimasi
+                          hemat bunga {formatIDR(Math.round(save2))}.
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Catatan: kalkulasi ini belum memperhitungkan biaya
+                          penalti atau biaya admin refinancing.
+                        </div>
+                        <div>
+                          <Button
+                            type="button"
+                            className="rounded-full px-4 mt-2"
+                            onClick={() =>
+                              alert("Compare lenders (implement dialog)")
+                            }
+                          >
+                            Compare lenders
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </>
+          )}
+
+          {/* Add Loan Form */}
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-lg">
+                Add New Installment / Loan
+              </CardTitle>
+              <CardDescription>
+                Isi data pokok cicilan kamu. Bisa isi harga+DP atau langsung
+                principal.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form
+                onSubmit={submitLoan}
+                className="grid grid-cols-1 md:grid-cols-2 gap-3"
+              >
+                <Input
+                  placeholder="Loan name (KPR / Mobil / dll)"
+                  value={loanForm.name}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                />
+
+                <Input
+                  type="number"
+                  placeholder="Harga aset (opsional)"
+                  value={loanForm.assetPrice}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, assetPrice: e.target.value }))
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="DP / Uang muka (opsional)"
+                  value={loanForm.downPayment}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, downPayment: e.target.value }))
+                  }
+                />
+
+                <Input
+                  type="number"
+                  placeholder="Principal / pokok pinjaman (IDR)"
+                  value={loanForm.principal}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, principal: e.target.value }))
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Annual rate %"
+                  step="0.01"
+                  value={loanForm.annualRate}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, annualRate: e.target.value }))
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Tenor (months)"
+                  value={loanForm.tenorMonths}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, tenorMonths: e.target.value }))
+                  }
+                />
+                <Input
+                  type="date"
+                  value={loanForm.startDate}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, startDate: e.target.value }))
+                  }
+                />
+
+                <select
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={loanForm.scheme}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({
+                      ...f,
+                      scheme: e.target.value as any,
+                    }))
+                  }
+                >
+                  <option value="fixed">Fixed</option>
+                  <option value="floating">Floating</option>
+                </select>
+
+                <Input
+                  type="number"
+                  placeholder="Fixed years (default 3)"
+                  value={loanForm.fixedYears}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, fixedYears: e.target.value }))
+                  }
+                />
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="Floating step % (default 0.5)"
+                  value={loanForm.floatStepPct}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, floatStepPct: e.target.value }))
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder="Step every X years (default 2)"
+                  value={loanForm.floatStepYears}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({
+                      ...f,
+                      floatStepYears: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="Max total increase % (default 3)"
+                  value={loanForm.floatCapPct}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({ ...f, floatCapPct: e.target.value }))
+                  }
+                />
+
+                <Input
+                  type="number"
+                  placeholder="Extra payment / month (optional)"
+                  value={loanForm.extraPaymentMonthly}
+                  onChange={(e) =>
+                    setLoanForm((f) => ({
+                      ...f,
+                      extraPaymentMonthly: e.target.value,
+                    }))
+                  }
+                />
+
+                <div className="md:col-span-2">
+                  <Button type="submit" className="rounded-full px-8">
+                    Save Loan
                   </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </>
       )}
     </main>
@@ -836,5 +1355,14 @@ function TabButton({
     >
       {children}
     </button>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-muted p-3 bg-background">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="font-semibold">{value}</div>
+    </div>
   );
 }

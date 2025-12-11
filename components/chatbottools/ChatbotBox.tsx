@@ -375,7 +375,7 @@ export default function ChatbotBox({
 
   const handleSend = () => {
     if (messageCount >= MAX_LIMIT) {
-      setShowSubCard(true); // BUKA POPUP
+      setShowSubCard(true);
       return;
     }
 

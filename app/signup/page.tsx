@@ -61,7 +61,7 @@ export default function SignUp() {
         </div>
 
         {/* BUTTON */}
-        <Link href="/onboard">
+        <Link href="/news">
         <button className="mt-8 w-full bg-gray-200 text-black py-3 rounded-lg transition font-semibold hover:bg-gray-300">
           Sign Up
         </button>

@@ -132,9 +132,7 @@ function buildAmortization(loan: LoanEntry) {
     month++;
   }
 
-  const firstPay = rows.length
-    ? rows[0].interest + rows[0].principalPaid
-    : 0;
+  const firstPay = rows.length ? rows[0].interest + rows[0].principalPaid : 0;
   return {
     basePayFirstMonth: firstPay,
     totalInterest,
@@ -184,9 +182,7 @@ function analyzeGoals(goals: GoalEntry[]) {
 
       // ✅ handle invalid targetDate
       if (Number.isNaN(td.getTime())) {
-        insights.push(
-          `Goal "${g.name}" punya target date yang tidak valid.`
-        );
+        insights.push(`Goal "${g.name}" punya target date yang tidak valid.`);
         return;
       }
 
@@ -299,9 +295,9 @@ export default function SavingsTrackerPage() {
   });
 
   const [savingDraft, setSavingDraft] = useState<Record<string, string>>({});
-  const [savingNoteDraft, setSavingNoteDraft] = useState<Record<string, string>>(
-    {}
-  );
+  const [savingNoteDraft, setSavingNoteDraft] = useState<
+    Record<string, string>
+  >({});
 
   function submitGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -400,9 +396,10 @@ export default function SavingsTrackerPage() {
     return goals.map((g) => ({
       name: g.name,
       saved: isFiniteNumber(g.currentBalance) ? g.currentBalance : 0,
-      remaining: isFiniteNumber(g.targetAmount) && isFiniteNumber(g.currentBalance)
-        ? Math.max(0, g.targetAmount - g.currentBalance)
-        : 0,
+      remaining:
+        isFiniteNumber(g.targetAmount) && isFiniteNumber(g.currentBalance)
+          ? Math.max(0, g.targetAmount - g.currentBalance)
+          : 0,
     }));
   }, [goals]);
 
@@ -417,8 +414,27 @@ export default function SavingsTrackerPage() {
     return m;
   }, [savings]);
 
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-6">
+      {showDisclaimer && (
+        <div className="w-full bg-red-100 text-red-700 px-4 py-3 rounded-xl flex justify-between items-start border border-red-200">
+          <div className="text-sm leading-relaxed">
+            ⚠️ <span className="font-medium">Disclaimer:</span>
+            Analisis AI bisa tidak 100% akurat. Harap verifikasi kembali sebelum
+            mengambil keputusan finansial.
+          </div>
+
+          <button
+            onClick={() => setShowDisclaimer(false)}
+            className="ml-4 text-red-500 hover:text-red-700 hover:cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl md:text-3xl font-bold">Goals & Loans</h1>
         <p className="text-muted-foreground">
@@ -427,10 +443,16 @@ export default function SavingsTrackerPage() {
       </div>
 
       <div className="flex gap-2">
-        <TabButton active={activeTab === "goals"} onClick={() => goTab("goals")}>
+        <TabButton
+          active={activeTab === "goals"}
+          onClick={() => goTab("goals")}
+        >
           Saving Goals
         </TabButton>
-        <TabButton active={activeTab === "loans"} onClick={() => goTab("loans")}>
+        <TabButton
+          active={activeTab === "loans"}
+          onClick={() => goTab("loans")}
+        >
           Installments / Loans
         </TabButton>
       </div>
@@ -512,7 +534,8 @@ export default function SavingsTrackerPage() {
                 <CardContent className="space-y-4">
                   {goals.map((g) => {
                     const remaining =
-                      isFiniteNumber(g.targetAmount) && isFiniteNumber(g.currentBalance)
+                      isFiniteNumber(g.targetAmount) &&
+                      isFiniteNumber(g.currentBalance)
                         ? g.targetAmount - g.currentBalance
                         : 0;
 
@@ -520,7 +543,9 @@ export default function SavingsTrackerPage() {
                       isFiniteNumber(g.targetAmount) && g.targetAmount > 0
                         ? Math.min(
                             100,
-                            Math.round((g.currentBalance / g.targetAmount) * 100)
+                            Math.round(
+                              (g.currentBalance / g.targetAmount) * 100
+                            )
                           )
                         : 0;
 
@@ -758,9 +783,9 @@ export default function SavingsTrackerPage() {
                         {l.scheme} • Start {l.startDate} • Tenor {l.tenorMonths}{" "}
                         bulan
                         {l.scheme === "floating" && fixedMonths
-                          ? ` • Fixed ${fixedMonths / 12} th → Floating mulai M${
-                              fixedMonths + 1
-                            }`
+                          ? ` • Fixed ${
+                              fixedMonths / 12
+                            } th → Floating mulai M${fixedMonths + 1}`
                           : ""}
                       </CardDescription>
                     </CardHeader>
@@ -796,13 +821,16 @@ export default function SavingsTrackerPage() {
 
                       <div className="text-sm text-muted-foreground">
                         Extra payment simulasi:{" "}
-                        {formatIDR(l.extraPaymentMonthly)}/bulan → estimasi lunas{" "}
-                        {yearsLeft} tahun.
+                        {formatIDR(l.extraPaymentMonthly)}/bulan → estimasi
+                        lunas {yearsLeft} tahun.
                       </div>
 
                       <div className="h-[28vh] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={chart} margin={{ left: 12, right: 12 }}>
+                          <AreaChart
+                            data={chart}
+                            margin={{ left: 12, right: 12 }}
+                          >
                             <CartesianGrid
                               vertical={false}
                               strokeDasharray="3 3"
@@ -856,9 +884,12 @@ export default function SavingsTrackerPage() {
           {/* Add Loan Form */}
           <Card className="rounded-2xl">
             <CardHeader>
-              <CardTitle className="text-lg">Add New Installment / Loan</CardTitle>
+              <CardTitle className="text-lg">
+                Add New Installment / Loan
+              </CardTitle>
               <CardDescription>
-                Isi data pokok cicilan kamu. Bisa isi harga+DP atau langsung principal.
+                Isi data pokok cicilan kamu. Bisa isi harga+DP atau langsung
+                principal.
               </CardDescription>
             </CardHeader>
             <CardContent>
