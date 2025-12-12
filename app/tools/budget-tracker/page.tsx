@@ -1014,7 +1014,7 @@ export default function SavingsTrackerPage() {
                 </CardContent>
               </Card>
 
-              {loans.map((l: Loan) => {
+              {loans.map((l: LoanEntry) => {
                 const amort = buildAmortization(l);
                 const maxMonths = Math.min(amort.rows.length, l.tenorMonths);
                 const chart = amort.rows.slice(0, maxMonths).map((r) => ({

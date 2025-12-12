@@ -6,7 +6,7 @@ import ChatbotBox from "@/components/chatbottools/ChatbotBox";
 import { BudgetProvider } from "@/components/budget/BudgetProvider";
 import { GoalsLoansProvider } from "@/components/finance/GoalsLoansProvider";
 
-export default function ToolsLayout({ children }) {
+export default function ToolsLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
