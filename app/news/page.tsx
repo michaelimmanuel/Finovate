@@ -123,7 +123,7 @@ export default function NewsIndex() {
             🚀{" "}
             <a
               className="underline underline-offset-4 font-semibold hover:text-yellow-800"
-              href="/subscription"
+              href="/subcription"
             >
               COME SUBSCRIBE
             </a>{" "}
