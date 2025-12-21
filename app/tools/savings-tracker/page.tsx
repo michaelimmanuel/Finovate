@@ -421,7 +421,7 @@ export default function SavingsTrackerPage() {
       {showDisclaimer && (
         <div className="w-full bg-red-100 text-red-700 px-4 py-3 rounded-xl flex justify-between items-start border border-red-200">
           <div className="text-sm leading-relaxed">
-            ⚠️ <span className="font-medium">Disclaimer:</span>
+            ⚠️ <span className="font-medium">Disclaimer: </span>
             Analisis AI bisa tidak 100% akurat. Harap verifikasi kembali sebelum
             mengambil keputusan finansial.
           </div>

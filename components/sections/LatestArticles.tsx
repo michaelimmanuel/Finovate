@@ -31,7 +31,6 @@ export function LatestArticles() {
           {sortedNews.slice(0, 6).map((a, i) => (
             <motion.a
               key={a.href}
-              href={a.href}
               className="block rounded-xl border p-6 hover:bg-neutral-50"
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}

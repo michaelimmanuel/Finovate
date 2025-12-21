@@ -43,7 +43,7 @@ export function Modal({ open, onClose, children}: {
             >
               ×
             </button>
-            <div className="p-8 pt-16 w-full h-full overflow-y-auto flex-1 flex flex-col items-center justify-center">
+            <div className="bg-white p-8 pt-16 w-full h-full overflow-y-auto flex-1 flex flex-col items-center justify-center">
               {children}
             </div>
           </div>

@@ -566,12 +566,12 @@ export default function ChatbotBox({
           chatbot tanpa batas 🚀
         </p>
 
-        <button
-          onClick={() => alert("Belum dihubungkan ke payment")}
-          className="w-full py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        <a
+          href="/subcription"
+          className="block w-full py-2 bg-primary text-white text-center rounded-md hover:bg-primary/90"
         >
           Subscribe 99K/bulan
-        </button>
+        </a>
 
         <button
           onClick={() => setShowSubCard(false)}

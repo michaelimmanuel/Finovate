@@ -125,7 +125,7 @@ export function NavBar() {
                 </a>
                 <a
                   role="menuitem"
-                  href="#analysis"
+                  href="/#analysis"
                   className="rounded-md px-3 py-2 hover:bg-white hover:text-black transition-colors"
                 >
                   AI Analysis

@@ -38,9 +38,6 @@ export function AIAnalysis() {
             </motion.div>
           ))}
         </div>
-        <div className="mt-8">
-          <a href="#subscribe" className="underline">See sample analysis</a>
-        </div>
       </div>
     </section>
   )

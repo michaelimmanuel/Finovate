@@ -17,7 +17,7 @@ export default function NewsIndex() {
     if (tag === null) {
       setSearchQuery("");
     }
-  } 
+  }
 
   const [searchQuery, setSearchQuery] = useState("");
   const [aiKeyword, setAiKeyword] = useState("");
@@ -95,52 +95,111 @@ export default function NewsIndex() {
     },
   ];
 
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [showDisclaimer2, setShowDisclaimer2] = useState(true);
+  const [showDisclaimer3, setShowDisclaimer3] = useState(true);
+
   return (
-    <main className="mx-auto max-w-7xl px-6 py-14">
-      <header className="mb-8">
-        <div className="mb-3 flex items-center gap-3 text-xs opacity-70">
-          <span className="inline-block rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-[11px] font-semibold tracking-wide uppercase text-black">
-            News
-          </span>
-          <span>
-            {new Date().toLocaleDateString(undefined, {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </span>
+    <main className="mx-auto max-w-7xl px-6 py-14 z-30">
+      {showDisclaimer2 && (
+        <div className="absolute ml-10 top-[130%] right-10 flex align-top">
+          <div className="w-46 z-30">
+            <img src="./ads2.png" alt="" />
+          </div>
+
+          <button
+            onClick={() => setShowDisclaimer2(false)}
+            className="absolute z-20 -ml-5 text-red-500 hover:text-red-700 hover:cursor-pointer"
+          >
+            ✕
+          </button>
         </div>
-        <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl tracking-tight">
-          Latest news and market notes
-        </h1>
-        <div className="mt-4 flex flex-wrap gap-2 text-md ">
-          {[
-            "All",
-            "Markets",
-            "Stocks",
-            "Crypto",
-            "Economy",
-            "Finance",
-            "Banks",
-          ].map((cat) => (
-            <span
-              key={cat}
-              onClick={() => {
-                setCategoryFilter(
-                  cat === "All" ? null : (cat.toLowerCase() as NewsCategory)
-                );
-                setSearchQuery("");
-              }}
-              className={`cursor-pointer rounded-full border px-3 py-1 transition ${
-                categoryFilter === cat.toLowerCase() ||
-                (cat === "All" && !categoryFilter)
-                  ? "bg-accent/20 border-accent"
-                  : "border-gray-300"
-              }`}
+      )}
+
+      {showDisclaimer3 && (
+        <div className="w-full bg-yellow-100 text-yellow-700 px-4 py-3 rounded-xl flex justify-between items-start border border-yellow-200">
+          <div className="text-sm leading-relaxed">
+            <span className="font-medium">SUBCRIBE: </span>
+            🚀{" "}
+            <a
+              className="underline underline-offset-4 font-semibold hover:text-yellow-800"
+              href="/subscription"
             >
-              {cat}
+              COME SUBSCRIBE
+            </a>{" "}
+            | Bebas baca tanpa iklan & unlock fitur premium hanya 99K/bulan!
+          </div>
+
+          <button
+            onClick={() => setShowDisclaimer3(false)}
+            className="ml-4 text-yellow-500 hover:text-yellow-700 hover:cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      <header className="flex justify-between mt-10 mb-8">
+        <div className="">
+          <div className="mb-3 flex items-center gap-3 text-xs opacity-70">
+            <span className="inline-block rounded-full border border-accent/50 bg-accent/10 px-3 py-1 text-[11px] font-semibold tracking-wide uppercase text-black">
+              News
             </span>
-          ))}
+            <span>
+              {new Date().toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+          <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl tracking-tight">
+            Latest news and market notes
+          </h1>
+          <div className="mt-4 flex flex-wrap gap-2 text-md ">
+            {[
+              "All",
+              "Markets",
+              "Stocks",
+              "Crypto",
+              "Economy",
+              "Finance",
+              "Banks",
+            ].map((cat) => (
+              <span
+                key={cat}
+                onClick={() => {
+                  setCategoryFilter(
+                    cat === "All" ? null : (cat.toLowerCase() as NewsCategory)
+                  );
+                  setSearchQuery("");
+                }}
+                className={`cursor-pointer rounded-full border px-3 py-1 transition ${
+                  categoryFilter === cat.toLowerCase() ||
+                  (cat === "All" && !categoryFilter)
+                    ? "bg-accent/20 border-accent"
+                    : "border-gray-300"
+                }`}
+              >
+                {cat}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="w-1/5">
+          {showDisclaimer && (
+            <div className="ml-10 absolute flex align-top">
+              <div className="w-2/4 z-30">
+                <img src="./ads1.png" alt="" />
+              </div>
+
+              <button
+                onClick={() => setShowDisclaimer(false)}
+                className="absolute z-20 -ml-5 text-red-500 hover:text-red-700 hover:cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -258,6 +317,7 @@ export default function NewsIndex() {
       <div className="mt-12 text-center text-sm opacity-70">
         More pagination & filters coming soon
       </div>
+
       {/* News Modal */}
       <NewsModal modalNews={modalNews} onClose={() => setModalNews(null)} />
 
